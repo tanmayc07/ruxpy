@@ -36,7 +36,11 @@ def start(path):
 def scan():
     """Show the repository status"""
     
-    with open('.dock/HELM', "r") as f:
+    helm_path = os.path.join('.dock', 'HELM')
+    if not os.path.exists(helm_path):
+        click.echo("No repository found. Please run 'ruxpy start' to initialize a repository.")
+        return
+    with open(helm_path, "r") as f:
         content = f.read().strip()
     
     branch_name = content.split(":")[-1].strip().split("/")[-1]
