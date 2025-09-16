@@ -12,7 +12,10 @@ classifiers = [
 ]
 dynamic = ["version"]
 dependencies = [
+    "black>=24.8.0",
     "click>=8.1.8",
+    "flake8>=5.0.4",
+    "pre-commit>=3.5.0",
     "pytest>=8.3.5",
 ]
 [tool.maturin]
