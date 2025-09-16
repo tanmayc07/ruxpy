@@ -17,6 +17,7 @@ def start(path):
     
     if os.path.exists(dock_path):
         click.echo(f"Repository already initialized.")
+        return
     else:
         os.makedirs(dock_path, exist_ok=True)
         
