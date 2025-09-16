@@ -33,5 +33,8 @@ jobs:
       - name: Build Rust extension
         run: cargo build --release
 
-      - name: Install Python extension (maturin develop)
-        run: maturin develop
+      - name: Build Python wheel (maturin build)
+        run: maturin build --release --out dist
+
+      - name: Install wheel
+        run: pip install dist/*.whl
