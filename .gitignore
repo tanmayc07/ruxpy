@@ -1,4 +1,5 @@
 /target
+/.dock
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -70,3 +71,7 @@ docs/_build/
 
 # Pyenv
 .python-version
+
+# Local convenience files
+NAMING_MAP.md
+build.sh
