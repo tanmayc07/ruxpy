@@ -13,6 +13,7 @@ classifiers = [
 dynamic = ["version"]
 dependencies = [
     "click>=8.1.8",
+    "pytest>=8.3.5",
 ]
 [tool.maturin]
 features = ["pyo3/extension-module"]
