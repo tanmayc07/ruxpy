@@ -1,9 +1,8 @@
-use std::fs::{self, File};
-use std::io::{Read, Write};
-use std::path::Path;
-use sha3::{Digest, Sha3_256};
 use pyo3::prelude::*;
-
+use sha3::{Digest, Sha3_256};
+use std::fs::{self, File};
+use std::io::Read;
+use std::path::Path;
 
 #[pyfunction]
 fn init_object_dir(repo_path: &str) -> PyResult<()> {
@@ -37,6 +36,25 @@ fn save_blob(repo_path: &str, file_path: &str) -> PyResult<String> {
 }
 
 #[pyfunction]
+fn save_starlog(repo_path: &str, starlog_bytes: Vec<u8>) -> PyResult<String> {
+    let mut hasher = Sha3_256::new();
+    hasher.update(&starlog_bytes);
+    let hash = format!("{:x}", hasher.finalize());
+
+    let (subdir, filename) = hash.split_at(2);
+    let starlog_dir = Path::new(repo_path)
+        .join(".dock")
+        .join("starlogs")
+        .join(subdir);
+    fs::create_dir_all(&starlog_dir)?;
+    let starlog_path = starlog_dir.join(filename);
+
+    fs::write(starlog_path, &starlog_bytes)?;
+
+    Ok(hash)
+}
+
+#[pyfunction]
 fn read_blob(repo_path: &str, hash: &str) -> PyResult<Vec<u8>> {
     let (subdir, filename) = hash.split_at(2);
     let obj_path = Path::new(repo_path).join(".dock").join("objects");
@@ -51,5 +69,6 @@ fn ruxpy(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(init_object_dir, m)?)?;
     m.add_function(wrap_pyfunction!(save_blob, m)?)?;
     m.add_function(wrap_pyfunction!(read_blob, m)?)?;
+    m.add_function(wrap_pyfunction!(save_starlog, m)?)?;
     Ok(())
 }

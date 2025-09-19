@@ -29,13 +29,30 @@ This document outlines planned features, enhancements, and edge cases for the ru
 - Case sensitivity: Handle differences in filesystem case sensitivity.
 - Non-UTF8 filenames: Support unusual filename encodings.
 
+### 3. `ruxpy course` Branch Management
+- `ruxpy course -l`: List all branches ("courses") in the repository.
+- `ruxpy course -sw <branch>`: Switch to a particular branch.
+- `ruxpy course -c <branch>`: Create a new branch.
+
+
+### 4. `ruxpy starlog`
+- `ruxpy starlog -l`: List all starlogs (commits) in the repository.
+- Interactive commit message: If `ruxpy starlog -c` is run without `-m`, open the default editor for the user to enter a commit message (similar to git).
+- Support for `-m` flag: Allow `ruxpy starlog -c -m "message"` or `ruxpy starlog -cm "message"` to commit with a message directly from the terminal.
+
 ## Future Enhancements
+
 - Branch management and switching
 - Diff and patch generation
 - Merge and conflict resolution
 - Commit signing and verification
 - Integration with remote repositories
 - Advanced logging and history visualization
+
+## Deployment & Release Plan
+
+- Plan to package and release ruxpy as a Nix package for easy installation and usage across platforms.
+- Provide reproducible development and deployment environments using Nix.
 
 ---
 
