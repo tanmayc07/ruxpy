@@ -1,6 +1,7 @@
 import click
 import os
 import json
+from ruxpy import ruxpy
 
 
 @click.group()
@@ -23,6 +24,9 @@ def start(path):
         return
     else:
         os.makedirs(dock_path, exist_ok=True)
+
+        # Create the objects dir
+        ruxpy.init_object_dir(dir_path)
 
         # Create config.toml
         config_path = os.path.join(dock_path, "config.toml")
@@ -73,6 +77,7 @@ def beam(files):
     except (FileNotFoundError, json.JSONDecodeError):
         staged_files = []
 
+    # only append if its not staged previously
     for file in files:
         if file not in staged_files:
             staged_files.append(file)
