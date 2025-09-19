@@ -3,6 +3,19 @@ import json
 from typing import List
 
 
+def get_paths(base_path):
+    paths = {}
+    paths["repo"] = base_path
+    paths["dock"] = os.path.join(base_path, ".dock")
+    paths["stage"] = os.path.join(paths["dock"], "stage")
+    paths["helm"] = os.path.join(paths["dock"], "HELM")
+    paths["links"] = os.path.join(paths["dock"], "links")
+    paths["core"] = os.path.join(paths["links"], "helm", "core")
+    paths["config"] = os.path.join(paths["dock"], "config.toml")
+    paths["objects"] = os.path.join(paths["dock"], "objects")
+    return paths
+
+
 def list_repo_files(repo_path) -> List[str]:
     files: List[str] = []
     for root, dirs, filenames in os.walk(repo_path):

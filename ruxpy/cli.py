@@ -1,7 +1,9 @@
 import click
 import os
 import json
+from datetime import datetime
 from ruxpy import ruxpy
+from .utility import list_unstaged_files, list_staged_files, get_paths
 
 
 @click.group()
@@ -36,12 +38,23 @@ def start(path):
         # Create HELM pointer file
         helm_path = os.path.join(dock_path, "HELM")
         with open(helm_path, "w") as f:
-            f.write("links: links/helm/core\n")
+            f.write("link: links/helm/core\n")
+
+        # Create the links directory
+        links_path = os.path.join(dock_path, "links")
+        os.makedirs(os.path.join(links_path, "helm"), exist_ok=True)
+        core_path = os.path.join(links_path, "helm", "core")
+        with open(core_path, "w") as f:
+            f.write("")
 
         # Create stage file for staging area
         stage_path = os.path.join(dock_path, "stage")
         with open(stage_path, "w") as f:
             f.write("[]")
+
+        # Create the starlogs dir
+        starlog_path = os.path.join(dock_path, "starlogs")
+        os.makedirs(starlog_path, exist_ok=True)
 
         click.echo(f"Initializing ruxpy repository in {dock_path}...")
 
@@ -71,11 +84,8 @@ def scan():
 def beam(files):
     """Stage files for the next starlog (commit)"""
 
-    try:
-        with open(".dock/stage", "r") as f:
-            staged_files = json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        staged_files = []
+    stage_path = os.path.join(".dock", "stage")
+    staged_files = list_staged_files(stage_path)
 
     # only append if its not staged previously
     for file in files:
@@ -89,6 +99,116 @@ def beam(files):
 Use ruxpy starlog to record.
 """
     click.echo(f"{feedback}")
+
+
+@main.command("starlog")
+@click.option(
+    "-c", "--create", is_flag=True, help="Create a new starlog entry (commit)"
+)
+@click.option("-m", "--message", help="Commit message for the starlog entry")
+def starlog(create, message):
+    base_path = os.getcwd()
+    paths = get_paths(base_path)
+
+    if create:
+        stage_path = os.path.join(paths["dock"], "stage")
+        staged_files = list_staged_files(stage_path)
+
+        if len(staged_files) == 0:
+            unstaged_files = list_unstaged_files(".")
+            click.echo(
+                f"{click.style('[WARNING]', fg="yellow")} " "Files are not beamed yet."
+            )
+
+            click.echo(
+                """
+On branch core
+Files yet to be beamed:
+ (use "ruxpy beam <file>..." to add files for starlog)"""
+            )
+
+            for file in unstaged_files[:4]:
+                click.echo(click.style(f"\tmodified:\t{file}", fg="red"))
+
+            # Return early if there are no staged files
+            return
+
+        if message:
+            author = "Jean-Luc Picard"
+            email = "picard@starfleet.com"
+            timestamp = datetime.now().isoformat()
+
+            staged_hash_list = {}
+            for file in staged_files:
+                hash = ruxpy.save_blob(paths["repo"], file)
+                staged_hash_list[file] = hash
+
+            helm_path = paths["helm"]
+            course_path = ""
+            try:
+                with open(helm_path, "r") as f:
+                    content = f.read().strip()
+                if content.startswith("link:"):
+                    course_file = content.split("link:")[1].strip()
+                    course_path = os.path.join(paths["dock"], course_file)
+                    if os.path.isfile(course_path):
+                        with open(course_path, "r") as cf:
+                            parent = cf.read().strip()
+                        if not parent:
+                            parent = None  # Initial starlog
+                    else:
+                        click.echo(
+                            "The spacedock is not initialized. "
+                            "Please run 'ruxpy start'"
+                        )
+                        return
+                else:
+                    click.echo(
+                        "The spacedock is not initialized. " "Please run 'ruxpy start'"
+                    )
+                    return
+            except FileNotFoundError:
+                click.echo(
+                    "The spacedock is not initialized. " "Please run 'ruxpy start'"
+                )
+                return
+
+            starlog_obj = {
+                "message": message,
+                "author": author,
+                "email": email,
+                "timestamp": timestamp,
+                "parent": parent,
+                "files": staged_hash_list,
+            }
+
+            serialized = json.dumps(starlog_obj, sort_keys=True)
+            starlog_bytes = serialized.encode("utf-8")
+            starlog_hash = ruxpy.save_starlog(paths["repo"], starlog_bytes)
+
+            with open(course_path, "w") as f:
+                f.write(starlog_hash)
+
+            with open(paths["stage"], "w") as f:
+                json.dump([], f)
+
+            click.echo(
+                f"{click.style('[SUCCESS]', fg="green")} "
+                "Starlog entry saved! Next course?"
+            )
+
+        else:
+            click.echo(
+                f"{click.style('[ERROR]', fg="red")} "
+                """Please include a message
+ (Use ruxpy starlog -cm to create a commit with a message.)"""
+            )
+    else:
+        click.echo(
+            """Usage:
+Use -cm to create a commit with a message.
+Use -l to list all starlogs."""
+        )
 
 
 if __name__ == "__main__":
