@@ -54,6 +54,21 @@ def test_beam_stages_files(init_repo):
     assert "file2.txt" in staged
 
 
+def test_beam_fails_when_spacedock_uninitialized(tmp_path):
+    repo_path = tmp_path / "repo"
+    repo_path.mkdir()
+    os.chdir(repo_path)
+
+    runner = CliRunner()
+    (repo_path / "file1.txt").write_text("hello")
+
+    result = runner.invoke(main, ["beam", "file1.txt"])
+    assert (
+        "[ERROR] The spacedock is not initialized. Please run 'ruxpy start'"
+        in result.output
+    )
+
+
 def test_set_config_individual(init_repo):
     repo_path = init_repo
     runner = CliRunner()
