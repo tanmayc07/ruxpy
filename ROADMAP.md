@@ -49,10 +49,26 @@ This document outlines planned features, enhancements, and edge cases for the ru
 - Integration with remote repositories
 - Advanced logging and history visualization
 
+- Config command improvements:
+  - Validation for config fields (e.g. email format, non-empty username/name)
+  - User feedback when no options are provided (show current config or helpful message)
+
+
 ## Deployment & Release Plan
 
 - Plan to package and release ruxpy as a Nix package for easy installation and usage across platforms.
 - Provide reproducible development and deployment environments using Nix.
+
+## Data Integrity & Atomic Writes
+
+To ensure robust data integrity, implement atomic write operations for critical storage paths:
+
+- Object store (blob storage):
+  - Use atomic file writes to prevent corruption or partial writes during blob save operations.
+- Starlog store (commit storage):
+  - Apply atomic writes when saving starlogs to guarantee commit consistency.
+
+Note: While atomic writes are less critical for config updates, they are essential for object and commit storage to avoid data loss or corruption in case of crashes or interruptions.
 
 ---
 
