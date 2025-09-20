@@ -16,6 +16,7 @@ def test_starlog_command(tmp_path):
     (repo / ".conf").mkdir(parents=True, exist_ok=True)
     (repo / ".conf" / "config.py").write_text("set_key=7ash2bs23basd")
     runner.invoke(main, ["beam", "file1.txt", ".conf/config.py"])
+    runner.invoke(main, ["config", "-sn", "Jean-luc picard", "-se", "picard@gmail.com"])
 
     # Run starlog
     result = runner.invoke(main, ["starlog", "-cm", "Test commit"])
@@ -28,3 +29,21 @@ def test_starlog_command(tmp_path):
     # Check stage file is cleared
     with open(repo / ".dock" / "stage") as f:
         assert json.load(f) == []
+
+
+def test_starlog_requires_name_and_email(tmp_path):
+    repo_path = tmp_path / "repo"
+    os.makedirs(repo_path)
+    os.chdir(repo_path)
+    runner = CliRunner()
+    runner.invoke(main, ["start", str(repo_path)])
+
+    (repo_path / "file1.txt").write_text("hello")
+    runner.invoke(main, ["beam", "file1.txt"])
+
+    result = runner.invoke(main, ["starlog", "-cm", "init"])
+
+    assert (
+        "[ERROR] Please set name and email for starlogs\n"
+        " (Use ruxpy config -sn <name> -se <email>)" in result.output
+    )

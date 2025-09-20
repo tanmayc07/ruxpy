@@ -1,6 +1,8 @@
 import click
 import os
 import json
+import tomlkit
+from tomlkit import exceptions
 from datetime import datetime
 from ruxpy import ruxpy
 from .utility import list_unstaged_files, list_staged_files, get_paths
@@ -11,6 +13,39 @@ from .utility import list_unstaged_files, list_staged_files, get_paths
 def main():
     """Ruxpy - A hybrid Rust/Python version control system"""
     pass
+
+
+@main.command("config")
+@click.option("-su", "--set-username", help="Set username in the config")
+@click.option("-se", "--set-email", help="Set email in the config")
+@click.option("-sn", "--set-name", help="Set name in the config")
+def config(set_username, set_email, set_name):
+    base_path = os.getcwd()
+    config_path = get_paths(base_path)["config"]
+
+    try:
+        with open(config_path, "r") as f:
+            config = tomlkit.parse(f.read())
+    except (FileNotFoundError, exceptions.ParseError):
+        click.echo(
+            f"{click.style('[ERROR]', fg="red")} "
+            "Spacedock is not initialized. No .dock/ found."
+        )
+        return
+
+    if set_username:
+        config["username"] = set_username
+    if set_email:
+        config["email"] = set_email
+    if set_name:
+        config["name"] = set_name
+
+    with open(config_path, "w") as f:
+        f.write(tomlkit.dumps(config))
+
+    click.echo(
+        f"{click.style('[SUCCESS]', fg="green")} " "Config updated successfully!"
+    )
 
 
 @main.command("start")
@@ -134,8 +169,22 @@ Files yet to be beamed:
             return
 
         if message:
-            author = "Jean-Luc Picard"
-            email = "picard@starfleet.com"
+            # Gather config metadata
+            config_path = paths["config"]
+            with open(config_path, "r") as f:
+                config = tomlkit.parse(f.read())
+
+            try:
+                author = config["name"]
+                email = config["email"]
+            except exceptions.NonExistentKey:
+                click.echo(
+                    f"{click.style('[ERROR]', fg="red")} "
+                    "Please set name and email for starlogs\n"
+                    " (Use ruxpy config -sn <name> -se <email>)"
+                )
+                return
+
             timestamp = datetime.now().isoformat()
 
             staged_hash_list = {}
