@@ -145,7 +145,7 @@ def beam(files):
     feedback = """Files successfully beamed to the spacedock.
 Use ruxpy starlog to record.
 """
-    click.echo(f"{click.style('[SUCCESS]', fg="green")} " f"{feedback}")
+    click.echo(f"{click.style('[SUCCESS]', fg='green')} " f"{feedback}")
 
 
 @main.command("starlog")
