@@ -119,7 +119,19 @@ def scan():
 def beam(files):
     """Stage files for the next starlog (commit)"""
 
-    stage_path = os.path.join(".dock", "stage")
+    paths = get_paths(os.getcwd())
+
+    # Check if spacedock is initialized
+    for _, path in paths.items():
+        if not os.path.isfile(path) and not os.path.isdir(path):
+            click.echo(
+                f"{click.style('[ERROR]', fg='red')} "
+                "The spacedock is not initialized. "
+                "Please run 'ruxpy start'"
+            )
+            return
+
+    stage_path = paths["stage"]
     staged_files = list_staged_files(stage_path)
 
     # only append if its not staged previously
@@ -127,13 +139,13 @@ def beam(files):
         if file not in staged_files:
             staged_files.append(file)
 
-    with open(".dock/stage", "w") as f:
+    with open(paths["stage"], "w") as f:
         json.dump(staged_files, f)
 
     feedback = """Files successfully beamed to the spacedock.
 Use ruxpy starlog to record.
 """
-    click.echo(f"{feedback}")
+    click.echo(f"{click.style('[SUCCESS]', fg="green")} " f"{feedback}")
 
 
 @main.command("starlog")
