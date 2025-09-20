@@ -169,8 +169,22 @@ Files yet to be beamed:
             return
 
         if message:
-            author = "Jean-Luc Picard"
-            email = "picard@starfleet.com"
+            # Gather config metadata
+            config_path = paths["config"]
+            with open(config_path, "r") as f:
+                config = tomlkit.parse(f.read())
+
+            try:
+                author = config["name"]
+                email = config["email"]
+            except exceptions.NonExistentKey:
+                click.echo(
+                    f"{click.style('[ERROR]', fg="red")} "
+                    "Please set name and email for starlogs\n"
+                    " (Use ruxpy config -sn <name> -se <email>)"
+                )
+                return
+
             timestamp = datetime.now().isoformat()
 
             staged_hash_list = {}
