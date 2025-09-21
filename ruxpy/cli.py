@@ -5,7 +5,7 @@ import tomlkit
 from tomlkit import exceptions
 from datetime import datetime
 from ruxpy import ruxpy
-from .utility import list_unstaged_files, list_staged_files, get_paths
+from . import utility as util
 
 
 @click.group()
@@ -21,7 +21,7 @@ def main():
 @click.option("-sn", "--set-name", help="Set name in the config")
 def config(set_username, set_email, set_name):
     base_path = os.getcwd()
-    config_path = get_paths(base_path)["config"]
+    config_path = util.get_paths(base_path)["config"]
 
     try:
         with open(config_path, "r") as f:
@@ -53,37 +53,39 @@ def config(set_username, set_email, set_name):
 def start(path):
     """Start a new ruxpy repository"""
 
-    dir_path = os.path.abspath(path)
-    dock_path = os.path.join(dir_path, ".dock")
+    # Check for spacedock
+    dock_root = util.find_dock_root(path)
 
-    if os.path.exists(dock_path):
-        click.echo("Repository already initialized.")
-        return
-    else:
+    if dock_root is None:
+        # Create new spacedock
+        dir_path = os.path.abspath(path)
+        paths = util.get_paths(dir_path)
+
+        dock_path = paths["dock"]
         os.makedirs(dock_path, exist_ok=True)
 
         # Create the objects dir
         ruxpy.init_object_dir(dir_path)
 
         # Create config.toml
-        config_path = os.path.join(dock_path, "config.toml")
+        config_path = paths["config"]
         with open(config_path, "w") as f:
             f.write("# config.toml\n")
 
         # Create HELM pointer file
-        helm_path = os.path.join(dock_path, "HELM")
+        helm_path = paths["helm"]
         with open(helm_path, "w") as f:
             f.write("link: links/helm/core\n")
 
         # Create the links directory
-        links_path = os.path.join(dock_path, "links")
+        links_path = paths["links"]
         os.makedirs(os.path.join(links_path, "helm"), exist_ok=True)
-        core_path = os.path.join(links_path, "helm", "core")
+        core_path = paths["core"]
         with open(core_path, "w") as f:
             f.write("")
 
         # Create stage file for staging area
-        stage_path = os.path.join(dock_path, "stage")
+        stage_path = paths["stage"]
         with open(stage_path, "w") as f:
             f.write("[]")
 
@@ -91,7 +93,50 @@ def start(path):
         starlog_path = os.path.join(dock_path, "starlogs")
         os.makedirs(starlog_path, exist_ok=True)
 
-        click.echo(f"Initializing ruxpy repository in {dock_path}...")
+        click.echo(f"Initialized ruxpy repository in {paths["repo"]}...")
+    else:
+        # Check if .dock/ has proper structure
+        paths = util.get_paths(dock_root)
+        is_proper = util.check_spacedock(paths)
+
+        if is_proper:
+            # Everything checks out, return early
+            click.echo(f"Reinitialized ruxpy repository in {paths["repo"]}...")
+            return
+        else:
+            # Initialize new spacedock
+            missing_paths = util.get_missing_spacedock_items(paths)
+            for path in missing_paths:
+                if util.required_items[path] == "dir":
+                    if path == "links":
+                        links_path = paths["links"]
+                        os.makedirs(os.path.join(links_path, "helm"), exist_ok=True)
+
+                    if path == "objects":
+                        ruxpy.init_object_dir(paths["repo"])
+
+                    if path == "dock":
+                        dock_path = paths["dock"]
+                        os.makedirs(dock_path, exist_ok=True)
+
+                if util.required_items[path] == "file":
+                    if path == "stage":
+                        with open(paths["stage"], "w") as f:
+                            f.write("[]")
+
+                    if path == "helm":
+                        with open(paths["helm"], "w") as f:
+                            f.write("link: links/helm/core\n")
+
+                    if path == "core":
+                        with open(paths["core"], "w") as f:
+                            f.write("")
+
+                    if path == "config":
+                        with open(paths["config"], "w") as f:
+                            f.write("# config.toml\n")
+
+            click.echo(f"Initialized ruxpy repository in {paths["repo"]}...")
 
 
 @main.command("scan")
@@ -119,7 +164,7 @@ def scan():
 def beam(files):
     """Stage files for the next starlog (commit)"""
 
-    paths = get_paths(os.getcwd())
+    paths = util.get_paths(os.getcwd())
 
     # Check if spacedock is initialized
     for _, path in paths.items():
@@ -132,7 +177,7 @@ def beam(files):
             return
 
     stage_path = paths["stage"]
-    staged_files = list_staged_files(stage_path)
+    staged_files = util.list_staged_files(stage_path)
 
     # only append if its not staged previously
     for file in files:
@@ -155,14 +200,14 @@ Use ruxpy starlog to record.
 @click.option("-m", "--message", help="Commit message for the starlog entry")
 def starlog(create, message):
     base_path = os.getcwd()
-    paths = get_paths(base_path)
+    paths = util.get_paths(base_path)
 
     if create:
         stage_path = os.path.join(paths["dock"], "stage")
-        staged_files = list_staged_files(stage_path)
+        staged_files = util.list_staged_files(stage_path)
 
         if len(staged_files) == 0:
-            unstaged_files = list_unstaged_files(".")
+            unstaged_files = util.list_unstaged_files(".")
             click.echo(
                 f"{click.style('[WARNING]', fg="yellow")} " "Files are not beamed yet."
             )
