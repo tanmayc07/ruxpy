@@ -3,6 +3,20 @@
 This document outlines planned features, enhancements, and edge cases for the ruxpy version control system. It serves as a guide for future development and contributions.
 
 ## Upcoming Features
+### Limitations & Future Improvements for `ruxpy starlog`
+- Only staged files are included in the new commit; partial commits are not supported.
+- Modified tracked files not staged are not updated in the new commit (previous hash remains).
+- Deleted files are not detected or removed from the commit’s file list.
+- Renames are treated as deletion and addition, not as a rename.
+- Untracked files are not added unless explicitly staged; no warning or prompt for untracked files.
+- No merge/conflict logic; advanced workflows are not supported.
+- No validation of parent commit state for consistency (e.g., deleted/renamed files).
+- Commit message validation is not enforced (empty messages allowed).
+
+**Planned improvements:**
+- Add logic for deleted files and commit message validation.
+- Improve parent commit state management.
+- Support for renames and merges in future versions.
 
 ### 1. Enhanced `ruxpy scan` (Repository Status)
 - Detect and list all files in the working directory that have been:
@@ -12,12 +26,21 @@ This document outlines planned features, enhancements, and edge cases for the ru
 - Compare the current state of files against the last committed (starlog) state using blob hashes.
 - Show which files are staged (present in `.dock/stage`) and which are unstaged.
 - Advise users if files can be staged with `beam` or committed with `starlog`.
-- Display a clear summary of repository status, including:
-  - Staged changes ready for commit
-  - Unstaged changes
-  - Untracked files
-  - Clean state (no changes)
+ Display a clear summary of repository status, including:
+   - Staged changes ready for commit
+   - Unstaged changes
+   - Untracked files
+   - Clean state (no changes)
 
+ #### Planned Rust Refactor for Scan/Status
+ - Move performance-critical and security-sensitive logic to Rust:
+   - Blob hashing and file comparison (for modified/untracked detection)
+   - Starlog (commit) reading and validation
+   - Staging area management (read/write and compare)
+   - Filesystem scanning (recursive listing, ignore rules, edge cases)
+   - .dock integrity checks
+
+ Python will orchestrate CLI and user interaction, calling Rust via PyO3 for heavy-lifting tasks.
 ### 2. Edge Case Handling
 - Binary files: Properly detect and display status for non-text files.
 - Symlinks: Decide whether to track links or targets.
