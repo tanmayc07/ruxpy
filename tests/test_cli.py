@@ -4,6 +4,7 @@ import tomlkit
 import pytest
 from click.testing import CliRunner
 from ruxpy.cli import main
+from ruxpy import utility as util
 
 
 @pytest.fixture
@@ -18,15 +19,76 @@ def init_repo(tmp_path):
         yield repo_path
 
 
-def test_start_creates_dock(tmp_path):
-    test_repo = tmp_path / "repo"
+def test_start_creates_spacedock(tmp_path):
+    repo_path = tmp_path / "repo"
+    repo_path.mkdir()
     runner = CliRunner()
-    result = runner.invoke(main, ["start", str(test_repo)])
 
-    assert result.exit_code == 0
-    assert (test_repo / ".dock").exists()
-    assert (test_repo / ".dock" / "config.toml").exists()
-    assert (test_repo / ".dock" / "HELM").exists()
+    with runner.isolated_filesystem():
+        os.chdir(repo_path)
+        result = runner.invoke(main, ["start"])
+
+        paths = util.get_paths(repo_path)
+        is_proper = util.check_spacedock(paths)
+
+        assert is_proper
+        assert f"Initialized ruxpy repository in {paths["repo"]}..." in result.output
+
+
+def test_start_creates_dock_at_path(tmp_path):
+    test_repo = tmp_path / "repo"
+    test_repo.mkdir()
+
+    runner = CliRunner()
+    _ = runner.invoke(main, ["start", str(test_repo)])
+
+    paths = util.get_paths(test_repo)
+    is_proper = util.check_spacedock(paths)
+
+    assert is_proper
+
+
+def test_start_reinitializes(tmp_path):
+    repo_path = tmp_path / "repo"
+    repo_path.mkdir()
+    runner = CliRunner()
+
+    with runner.isolated_filesystem():
+        os.chdir(repo_path)
+        _ = runner.invoke(main, ["start"])
+        result = runner.invoke(main, ["start"])
+
+        paths = util.get_paths(repo_path)
+        is_proper = util.check_spacedock(paths)
+
+        assert is_proper
+        assert f"Reinitialized ruxpy repository in {paths["repo"]}..." in result.output
+
+
+def test_start_initializes_with_missing_items(tmp_path):
+    repo_path = tmp_path / "repo"
+    repo_path.mkdir()
+    runner = CliRunner()
+
+    with runner.isolated_filesystem():
+        os.chdir(repo_path)
+        _ = runner.invoke(main, ["start"])
+
+        paths = util.get_paths(repo_path)
+
+        config_path = repo_path / ".dock" / "config.toml"
+        if config_path.exists():
+            os.remove(config_path)
+
+        objects_path = repo_path / ".dock" / "objects"
+        if objects_path.exists():
+            os.rmdir(objects_path)
+
+        result = runner.invoke(main, ["start"])
+
+        is_proper = util.check_spacedock(paths)
+        assert is_proper
+        assert f"Initialized ruxpy repository in {paths["repo"]}..." in result.output
 
 
 def test_scan_shows_status(init_repo):
