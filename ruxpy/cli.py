@@ -1,6 +1,7 @@
 import click
 import os
 import json
+import hashlib
 import tomlkit
 from tomlkit import exceptions
 from datetime import datetime
@@ -143,20 +144,114 @@ def start(path):
 def scan():
     """Show the repository status"""
 
-    helm_path = os.path.join(".dock", "HELM")
-    if not os.path.exists(helm_path):
+    # check for spacedock
+    dock_root = util.find_dock_root()
+    if dock_root is None:  # Not a ruxpy repository
         click.echo(
-            "No repository found. \
-            Please run 'ruxpy start' to initialize a repository."
+            f"{click.style('[ERROR]', fg='red')} "
+            "The spacedock is not initialized. "
+            "Please run 'ruxpy start'"
         )
         return
-    with open(helm_path, "r") as f:
+    else:
+        paths = util.get_paths(dock_root)
+        is_proper = util.check_spacedock(paths)
+        if not is_proper:
+            click.echo(
+                f"{click.style('[ERROR]', fg='red')} "
+                "The spacedock is corrupted. "
+                "Please run 'ruxpy start'"
+            )
+            return
+
+    # Scan the spacedock
+    _ = paths["helm"]
+
+    with open(paths["helm"], "r") as f:
         content = f.read().strip()
 
-    branch_name = content.split(":")[-1].strip().split("/")[-1]
+    course_name = content.split(":")[-1].strip().split("/")[-1]
+    click.echo(f"On course '-{course_name}-'")
 
-    click.echo(f"On branch '-{branch_name}-'")
-    click.echo("Spacedock clear, no starlog updates required.")
+    # Read staging area
+    stage_path = paths["stage"]
+    if not os.path.exists(stage_path):
+        click.echo(
+            f"{click.style('[ERROR]', fg='red')} "
+            "The spacedock is corrupted. "
+            "Please run 'ruxpy start'"
+        )
+        return
+
+    with open(stage_path, "r") as f:
+        staged_files = json.load(f)
+
+    # Load the latest starlog entry
+    _ = os.path.join(paths["dock"], "starlogs")
+
+    current_starlog_path = os.path.join(paths["links"], "helm", course_name)
+    with open(current_starlog_path, "r") as f:
+        current_starlog_hash = f.read()
+
+    starlog_obj_path = os.path.join(
+        paths["dock"], "starlogs", current_starlog_hash[:2], current_starlog_hash[2:]
+    )
+    if not os.path.isfile(starlog_obj_path):
+        return
+
+    with open(starlog_obj_path, "r") as f:
+        starlog_obj = json.load(f)
+
+    working_dir = util.list_repo_files(paths["repo"])
+
+    untracked = []
+    modified = []
+    deleted = []
+
+    for file in working_dir:
+        if file not in starlog_obj["files"]:
+            untracked.append(file)
+            continue
+
+        with open(file, "rb") as f:
+            content = f.read()
+
+        hash_obj = hashlib.sha3_256()
+        hash_obj.update(content)
+        digest = hash_obj.hexdigest()
+
+        if digest != starlog_obj["files"][file]:
+            modified.append(file)
+
+    for file, _ in starlog_obj["files"].items():
+        if file not in working_dir:
+            deleted.append(file)
+
+    untracked = [f for f in untracked if f not in staged_files]
+
+    click.echo("Ready to record into starlog:")
+    for file in staged_files:
+        click.echo(f"\t{click.style(f'beamed:\t{file}', fg="green")}")
+    click.echo()
+
+    click.echo("Changes that can be beamed:")
+    click.echo("  (use `ruxpy beam <file>...` to update)")
+    for file in modified:
+        click.echo(f"\t{click.style(f'modified:\t{file}', fg="red")}")
+    click.echo()
+
+    click.echo("Changes that are untracked:")
+    click.echo(" (use `ruxpy beam <file>... to update`)")
+    for file in untracked:
+        click.echo(f"\t{click.style(file, fg="red")}")
+    click.echo()
+
+    click.echo(
+        f"Modified: {modified} "
+        f"Untracked: {untracked} "
+        f"Deleted: {deleted} "
+        f"Staged: {staged_files}"
+    )
 
 
 @main.command("beam")
