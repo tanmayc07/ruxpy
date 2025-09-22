@@ -67,7 +67,7 @@ def list_repo_files(repo_path) -> List[str]:
     files: List[str] = []
     for root, dirs, filenames in os.walk(repo_path):
         # Skip internal directories
-        if ".dock" in root or "__pycache__" in root:
+        if ".dock" in root or "__pycache__" in root or ".git" in root:
             continue
         for filename in filenames:
             # Get relative path
@@ -97,3 +97,15 @@ def list_unstaged_files(repo_path: str):
             unstaged_files.append(file)
 
     return unstaged_files
+
+
+def load_starlog_files(paths, starlog_hash):
+    obj_file = os.path.join(
+        paths["dock"], "starlogs", starlog_hash[:2], starlog_hash[2:]
+    )
+    if not os.path.isfile(obj_file):
+        raise Exception("FileNotFound Error")
+
+    with open(obj_file, "r") as f:
+        starlog_obj = json.load(f)
+    return starlog_obj.get("files", {})
