@@ -197,6 +197,23 @@ def scan():
         paths["dock"], "starlogs", current_starlog_hash[:2], current_starlog_hash[2:]
     )
     if not os.path.isfile(starlog_obj_path):
+        unstaged_files = util.list_unstaged_files(paths["repo"])
+
+        click.echo(f"{click.style('[INFO]', fg='yellow')} " "No starlog entries found!")
+
+        if len(staged_files) > 0:
+            click.echo()
+            click.echo("Ready to record into starlog:")
+            for file in staged_files:
+                click.echo(f"\t{click.style(f'beamed:\t{file}', fg="green")}")
+
+        if len(unstaged_files) > 0:
+            click.echo()
+            click.echo("Changes that are untracked:")
+            click.echo(" (use `ruxpy beam <file>... to update`)")
+            for file in unstaged_files:
+                click.echo(f"\t{click.style(file, fg="red")}")
+
         return
 
     with open(starlog_obj_path, "r") as f:
@@ -228,6 +245,7 @@ def scan():
             deleted.append(file)
 
     untracked = [f for f in untracked if f not in staged_files]
+    modified = [f for f in modified if f not in staged_files]
 
     click.echo("Ready to record into starlog:")
     for file in staged_files:
@@ -238,6 +256,9 @@ def scan():
     click.echo("  (use `ruxpy beam <file>...` to update)")
     for file in modified:
         click.echo(f"\t{click.style(f'modified:\t{file}', fg="red")}")
+
+    for file in deleted:
+        click.echo(f"\t{click.style(f'deleted:\t{file}', fg="red")}")
     click.echo()
 
     click.echo("Changes that are untracked:")
@@ -303,8 +324,18 @@ Use ruxpy starlog to record."""
 )
 @click.option("-m", "--message", help="Commit message for the starlog entry")
 def starlog(create, message):
-    base_path = os.getcwd()
+    # Find the root and check integrity
+    base_path = util.find_dock_root()
     paths = util.get_paths(base_path)
+
+    is_proper = util.check_spacedock(paths)
+    if not is_proper:
+        click.echo(
+            f"{click.style('[ERROR]', fg='red')} "
+            "The spacedock is not initialized. "
+            "Please run 'ruxpy start'"
+        )
+        return
 
     if create:
         stage_path = os.path.join(paths["dock"], "stage")
@@ -323,8 +354,8 @@ Files yet to be beamed:
  (use "ruxpy beam <file>..." to add files for starlog)"""
             )
 
-            for file in unstaged_files[:4]:
-                click.echo(click.style(f"\tmodified:\t{file}", fg="red"))
+            for file in unstaged_files:
+                click.echo(click.style(f"\tuntracked:\t{file}", fg="red"))
 
             # Return early if there are no staged files
             return
@@ -391,6 +422,37 @@ Files yet to be beamed:
                 "parent": parent,
                 "files": staged_hash_list,
             }
+
+            if starlog_obj["parent"] is not None:
+                try:
+                    parent_files = util.load_starlog_files(paths, parent)
+                except Exception:
+                    click.echo(
+                        f"{click.style("[ERROR]", fg="red")} "
+                        "Opening parent starlog failed!"
+                    )
+                    return
+
+                all_files = util.list_repo_files(paths["repo"])
+                current_hashes = {}
+                for file in all_files:
+                    with open(file, "rb") as f:
+                        content = f.read()
+                    hash_obj = hashlib.sha3_256()
+                    hash_obj.update(content)
+                    digest = hash_obj.hexdigest()
+                    current_hashes[file] = digest
+
+                for pfile, pf_hash in parent_files.items():
+                    if pfile in all_files:
+                        # check if file is modified but not staged
+                        if pfile not in staged_files:
+                            starlog_obj["files"][pfile] = pf_hash
+                    else:
+                        # check for renamed files
+                        for file, fhash in current_hashes.items():
+                            if fhash == pf_hash and file not in parent_files:
+                                starlog_obj["files"][file] = pf_hash
 
             serialized = json.dumps(starlog_obj, sort_keys=True)
             starlog_bytes = serialized.encode("utf-8")
