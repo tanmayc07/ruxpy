@@ -7,6 +7,7 @@ from tomlkit import exceptions
 from ruxpy import ruxpy
 from . import utility as util
 from .starlog import starlog
+from ruxpy import filter_ignored_files
 
 
 @click.group()
@@ -307,8 +308,18 @@ def beam(files):
     stage_path = paths["stage"]
     staged_files = util.list_staged_files(stage_path)
 
+    files_to_check = list(files)
+    files_not_ignored = filter_ignored_files(files_to_check)
+
+    if len(files_not_ignored) == 0:
+        click.echo(
+            f"{click.style('[INFO]', fg='yellow')} No files beamed!\n"
+            "If you think it's unexpected, check if .dockignore is present."
+        )
+        return
+
     # only append if its not staged previously
-    for file in files:
+    for file in files_not_ignored:
         if file not in staged_files:
             staged_files.append(file)
 

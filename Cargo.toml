@@ -9,6 +9,7 @@ name = "ruxpy"
 crate-type = ["cdylib"]
 
 [dependencies]
+ignore = "0.4.23"
 pyo3 = "0.25.0"
 sha3 = "0.10.8"
 walkdir = "2.5.0"
