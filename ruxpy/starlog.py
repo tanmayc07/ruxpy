@@ -14,7 +14,8 @@ from . import utility as util
     "-c", "--create", is_flag=True, help="Create a new starlog entry (commit)"
 )
 @click.option("-m", "--message", help="Commit message for the starlog entry")
-def starlog(create, message):
+@click.option("-l", "--list", is_flag=True, help="List all starlog entries (commits)")
+def starlog(create, message, list):
     # Find the root and check integrity
     base_path = util.find_dock_root()
     paths = util.get_paths(base_path)
@@ -26,6 +27,35 @@ def starlog(create, message):
             "The spacedock is not initialized. "
             "Please run 'ruxpy start'"
         )
+        return
+
+    if list:
+        starlogs_dir = os.path.join(paths["dock"], "starlogs")
+        starlogs_obj_list = []
+
+        for root, dirs, files in os.walk(starlogs_dir):
+            for file in files:
+                dirpart = os.path.basename(root)
+                full_hash = dirpart + file
+                starlog_path = os.path.join(root, file)
+                with open(starlog_path, "r") as f:
+                    starlog_obj = json.load(f)
+                    starlog_obj["hash"] = full_hash
+                    starlogs_obj_list.append(starlog_obj)
+
+        starlogs_obj_list.sort(key=lambda x: x["timestamp"], reverse=True)
+
+        for starlog_obj in starlogs_obj_list:
+            click.echo(
+                f"Hash: {starlog_obj["hash"]}\n"
+                f"Author: {starlog_obj.get('author')}\n"
+                f"Email: {starlog_obj.get('email')}\n"
+                f"Message: {starlog_obj.get('message')}\n"
+                f"Timestamp: {starlog_obj.get('timestamp')}\n"
+                f"Parent: {starlog_obj.get('parent')}\n"
+                "-------------------------------------------------------------------"
+            )
+
         return
 
     if create:
