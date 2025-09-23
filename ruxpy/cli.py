@@ -58,7 +58,7 @@ def start(path):
     """Start a new ruxpy repository"""
 
     # Check for spacedock
-    dock_root = util.find_dock_root(path)
+    dock_root = util.find_dock_root_py(path)
 
     if dock_root is None:
         # Create new spacedock
@@ -148,7 +148,7 @@ def scan():
     """Show the repository status"""
 
     # check for spacedock
-    dock_root = util.find_dock_root()
+    dock_root = util.find_dock_root_py()
     if dock_root is None:  # Not a ruxpy repository
         click.echo(
             f"{click.style('[ERROR]', fg='red')} "

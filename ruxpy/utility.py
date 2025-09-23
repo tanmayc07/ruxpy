@@ -1,6 +1,7 @@
 import os
 import json
 from typing import List
+from ruxpy import find_dock_root, list_all_files
 
 required_items = {
     "repo": "dir",
@@ -14,18 +15,14 @@ required_items = {
 }
 
 
-def find_dock_root(start_path="."):
-    current = os.path.abspath(start_path)
-    while current != "/":
-        if os.path.exists(os.path.join(current, ".dock")):
-            return current
-        current = os.path.dirname(current)
-    return None
+def find_dock_root_py(start_path="."):
+    result = find_dock_root(start_path=".")
+    return result
 
 
 def get_paths(base_path=None):
     if base_path is None:
-        base_path = find_dock_root()
+        base_path = find_dock_root_py()
         if base_path is None:
             raise Exception("No spacedock found!")
 
@@ -64,15 +61,7 @@ def check_spacedock(paths):
 
 
 def list_repo_files(repo_path) -> List[str]:
-    files: List[str] = []
-    for root, dirs, filenames in os.walk(repo_path):
-        # Skip internal directories
-        if ".dock" in root or "__pycache__" in root or ".git" in root:
-            continue
-        for filename in filenames:
-            # Get relative path
-            rel_path = os.path.relpath(os.path.join(root, filename), repo_path)
-            files.append(rel_path)
+    files: List[str] = list_all_files(repo_path)
     return files
 
 
@@ -86,6 +75,28 @@ def list_staged_files(stage_path):
 
 
 def list_unstaged_files(repo_path: str):
+    repo_path = find_dock_root_py(repo_path)
+    paths = get_paths(repo_path)
+
+    with open(os.path.join(paths["dock"], "HELM"), "r") as f:
+        branch_path = f.read().strip()
+
+    latest_starlog_hash = ""
+    if branch_path.startswith("link:"):
+        course_file = branch_path.split("link:")[1].strip()
+        course_path = os.path.join(paths["dock"], course_file)
+
+        if os.path.isfile(course_path):
+            with open(course_path, "r") as cf:
+                latest_starlog_hash = cf.read().strip()
+                if not latest_starlog_hash:
+                    latest_starlog_hash = None
+
+    try:
+        committed_files = load_starlog_files(paths, latest_starlog_hash)
+    except Exception:
+        committed_files = []
+
     all_files = list_repo_files(repo_path)
 
     stage_path = os.path.join(repo_path, ".dock", "stage")
@@ -93,7 +104,7 @@ def list_unstaged_files(repo_path: str):
 
     unstaged_files = []
     for file in all_files:
-        if file not in staged_files:
+        if file not in staged_files and file not in committed_files:
             unstaged_files.append(file)
 
     return unstaged_files
