@@ -27,7 +27,15 @@
             pkgs.python312Packages.wheel
           ];
           shellHook = ''
-            echo "\nWelcome to the Ruxpy dev environment!"
+            [ -f ~/.bashrc ] && source ~/.bashrc
+            export PS1="\[\033[0;32m\](ruxpy-nix) \[\033[0m\]$PS1"
+
+            if [ -n "$VIRTUAL_ENV" ]; then
+              export PS1="\[\033[0;32m\][venv:$(basename $VIRTUAL_ENV)]\[\033[0m\] $PS1"
+            else
+              export PS1="(no-venv) $PS1"
+            fi
+            echo "Welcome to the Ruxpy dev environment!"
             echo "Python: $(python3 --version)"
             echo "Rust: $(rustc --version)"
             echo "Maturin: $(maturin --version)"
