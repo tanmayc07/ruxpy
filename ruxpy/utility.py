@@ -1,6 +1,7 @@
 import os
 import json
 from typing import List
+from ruxpy import find_dock_root
 
 required_items = {
     "repo": "dir",
@@ -14,18 +15,14 @@ required_items = {
 }
 
 
-def find_dock_root(start_path="."):
-    current = os.path.abspath(start_path)
-    while current != "/":
-        if os.path.exists(os.path.join(current, ".dock")):
-            return current
-        current = os.path.dirname(current)
-    return None
+def find_dock_root_py(start_path="."):
+    result = find_dock_root(start_path=".")
+    return result
 
 
 def get_paths(base_path=None):
     if base_path is None:
-        base_path = find_dock_root()
+        base_path = find_dock_root_py()
         if base_path is None:
             raise Exception("No spacedock found!")
 

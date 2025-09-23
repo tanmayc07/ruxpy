@@ -17,7 +17,7 @@ from . import utility as util
 @click.option("-l", "--list", is_flag=True, help="List all starlog entries (commits)")
 def starlog(create, message, list):
     # Find the root and check integrity
-    base_path = util.find_dock_root()
+    base_path = util.find_dock_root_py()
     paths = util.get_paths(base_path)
 
     is_proper = util.check_spacedock(paths)

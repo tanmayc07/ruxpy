@@ -2,7 +2,7 @@ use pyo3::prelude::*;
 use sha3::{Digest, Sha3_256};
 use std::fs::{self, File};
 use std::io::Read;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 #[pyfunction]
 fn init_object_dir(repo_path: &str) -> PyResult<()> {
@@ -63,6 +63,25 @@ fn read_blob(repo_path: &str, hash: &str) -> PyResult<Vec<u8>> {
     Ok(contents)
 }
 
+#[pyfunction]
+fn find_dock_root(start_path: Option<String>) -> PyResult<Option<String>> {
+    let mut current = match start_path {
+        Some(path) => PathBuf::from(path),
+        None => std::env::current_dir().unwrap(),
+    };
+
+    loop {
+        if current.join(".dock").exists() {
+            return Ok(Some(current.to_string_lossy().to_string()))
+        }
+
+        if !current.pop() {
+            break;
+        }
+    }
+    Ok(None)
+}
+
 /// A Python module implemented in Rust.
 #[pymodule]
 fn ruxpy(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -70,5 +89,6 @@ fn ruxpy(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(save_blob, m)?)?;
     m.add_function(wrap_pyfunction!(read_blob, m)?)?;
     m.add_function(wrap_pyfunction!(save_starlog, m)?)?;
+    m.add_function(wrap_pyfunction!(find_dock_root, m)?)?;
     Ok(())
 }
