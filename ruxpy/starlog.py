@@ -33,8 +33,10 @@ def starlog(create, message, list):
         starlogs_dir = os.path.join(paths["dock"], "starlogs")
         starlogs_obj_list = []
 
-        for root, dirs, files in os.walk(starlogs_dir):
+        found_logs = False
+        for root, _, files in os.walk(starlogs_dir):
             for file in files:
+                found_logs = True
                 dirpart = os.path.basename(root)
                 full_hash = dirpart + file
                 starlog_path = os.path.join(root, file)
@@ -42,6 +44,12 @@ def starlog(create, message, list):
                     starlog_obj = json.load(f)
                     starlog_obj["hash"] = full_hash
                     starlogs_obj_list.append(starlog_obj)
+
+        if not found_logs:
+            click.echo(
+                f"{click.style("[INFO]", fg="yellow")} " "No starlog entries found!"
+            )
+            return
 
         starlogs_obj_list.sort(key=lambda x: x["timestamp"], reverse=True)
 
