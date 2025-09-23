@@ -3,6 +3,7 @@ use sha3::{Digest, Sha3_256};
 use std::fs::{self, File};
 use std::io::Read;
 use std::path::{Path, PathBuf};
+use walkdir::WalkDir;
 
 #[pyfunction]
 fn init_object_dir(repo_path: &str) -> PyResult<()> {
@@ -72,7 +73,7 @@ fn find_dock_root(start_path: Option<String>) -> PyResult<Option<String>> {
 
     loop {
         if current.join(".dock").exists() {
-            return Ok(Some(current.to_string_lossy().to_string()))
+            return Ok(Some(current.to_string_lossy().to_string()));
         }
 
         if !current.pop() {
@@ -80,6 +81,37 @@ fn find_dock_root(start_path: Option<String>) -> PyResult<Option<String>> {
         }
     }
     Ok(None)
+}
+
+#[pyfunction]
+fn list_all_files(working_dir: &str) -> PyResult<Vec<String>> {
+    let base = Path::new(working_dir);
+    let files = WalkDir::new(base)
+        .into_iter()
+        .filter_map(|entry| {
+            entry.ok().and_then(|e| {
+                let path = e.path();
+                // Skip internal directories
+                let path_str = path.to_string_lossy();
+                if path_str.contains(".dock")
+                    || path_str.contains("__pycache__")
+                    || path_str.contains(".git")
+                {
+                    return None;
+                }
+
+                if e.file_type().is_file() {
+                    // Get relative path
+                    path.strip_prefix(base)
+                        .ok()
+                        .map(|rel| rel.to_string_lossy().to_string())
+                } else {
+                    None
+                }
+            })
+        })
+        .collect();
+    Ok(files)
 }
 
 /// A Python module implemented in Rust.
@@ -90,5 +122,6 @@ fn ruxpy(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(read_blob, m)?)?;
     m.add_function(wrap_pyfunction!(save_starlog, m)?)?;
     m.add_function(wrap_pyfunction!(find_dock_root, m)?)?;
+    m.add_function(wrap_pyfunction!(list_all_files, m)?)?;
     Ok(())
 }

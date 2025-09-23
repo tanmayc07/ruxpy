@@ -7,6 +7,7 @@ from .ruxpy import (
     read_blob,
     save_starlog,
     find_dock_root,
+    list_all_files,
 )
 
 __all__ = [
@@ -15,4 +16,5 @@ __all__ = [
     "read_blob",
     "save_starlog",
     "find_dock_root",
+    "list_all_files",
 ]
