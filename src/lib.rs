@@ -94,10 +94,10 @@ fn list_all_files(working_dir: &str) -> PyResult<Vec<String>> {
             entry.ok().and_then(|e| {
                 let path = e.path();
                 // Skip internal directories
-                // Skip internal directories
-                if path.to_string_lossy().contains(".dock")
-                    || path.to_string_lossy().contains("__pycache__")
-                    || path.to_string_lossy().contains(".git")
+                let path_str = path.to_string_lossy();
+                if path_str.contains(".dock")
+                    || path_str.contains("__pycache__")
+                    || path_str.contains(".git")
                 {
                     return None;
                 }
@@ -126,7 +126,12 @@ fn get_dockignore_matcher() -> Option<Gitignore> {
     if dockignore_path.exists() {
         let mut builder = GitignoreBuilder::new(".");
         builder.add(dockignore_path);
-        let gitignore = builder.build().unwrap();
+        let gitignore = builder
+            .build()
+            .map_err(|e| {
+                pyo3::exceptions::PyIOError::new_err(format!("Failed to parse .dockignore: {e}"))
+            })
+            .ok()?;
         Some(gitignore)
     } else {
         None

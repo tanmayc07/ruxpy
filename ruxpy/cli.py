@@ -313,7 +313,7 @@ def beam(files):
 
     if len(files_not_ignored) == 0:
         click.echo(
-            f"{click.style('[INFO]', fg="yellow")} No files beamed!\n"
+            f"{click.style('[INFO]', fg='yellow')} No files beamed!\n"
             "If you think it's unexpected, check if .dockignore is present."
         )
         return
