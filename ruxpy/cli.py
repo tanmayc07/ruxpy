@@ -318,8 +318,13 @@ def beam(files):
         )
         return
 
+    click.echo(f"{click.style('[INFO]', fg="yellow")} " "Starting to beam the files...")
+
     # only append if its not staged previously
-    for file in files_not_ignored:
+    total = len(files_not_ignored)
+    for idx, file in enumerate(files_not_ignored, 1):
+        percent_done = int((idx / total) * 100)
+        click.echo(f"{file}\t\t[...{percent_done}%]")
         if file not in staged_files:
             staged_files.append(file)
 
