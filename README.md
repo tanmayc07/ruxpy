@@ -23,8 +23,23 @@
 git clone https://github.com/tanmayc07/ruxpy.git
 cd ruxpy
 
-# Build and install (requires Python 3.12+, Rust, maturin)
-pip install maturin
+# Install Nix (if not already installed)
+curl -L https://nixos.org/nix/install | sh
+
+# Enable Nix flakes (add to ~/.config/nix/nix.conf):
+echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
+
+# Create and activate a venv
+uv venv
+source .venv/bin/activate
+
+# Install python dependencies (using uv)
+uv pip install -r requirements.txt
+
+# Enter the nix shell (requires Nix and flakes)
+nix develop
+
+# Build the Rust extension
 maturin develop
 ```
 

@@ -1,0 +1,39 @@
+{
+  description = "Ruxpy development environment";
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
+    flake-utils.url = "github:numtide/flake-utils";
+  };
+  outputs = { self, nixpkgs, flake-utils }:
+    flake-utils.lib.eachDefaultSystem (system:
+      let
+        pkgs = import nixpkgs { inherit system; };
+      in {
+        devShells.default = pkgs.mkShell {
+          buildInputs = [
+            pkgs.python312Full
+            pkgs.rustc
+            pkgs.cargo
+            pkgs.maturin
+            pkgs.git
+            pkgs.python312Packages.pip
+            pkgs.python312Packages.uv
+            pkgs.python312Packages.click
+            pkgs.python312Packages.black
+            pkgs.python312Packages.flake8
+            pkgs.python312Packages.tomlkit
+            pkgs.python312Packages.pytest
+            pkgs.python312Packages.setuptools
+            pkgs.python312Packages.wheel
+          ];
+          shellHook = ''
+            echo "\nWelcome to the Ruxpy dev environment!"
+            echo "Python: $(python3 --version)"
+            echo "Rust: $(rustc --version)"
+            echo "Maturin: $(maturin --version)"
+            echo "run maturin develop to start using ruxpy"
+          '';
+        };
+      }
+    );
+}
