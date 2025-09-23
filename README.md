@@ -39,6 +39,9 @@ uv pip install -r requirements.txt
 # Enter the nix shell (requires Nix and flakes)
 nix develop
 
+# Install the pre-commit hook if its your first time after cloning the repo
+pre-commit install
+
 # Build the Rust extension
 maturin develop
 ```
