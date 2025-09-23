@@ -1,3 +1,4 @@
+use ignore::gitignore::{Gitignore, GitignoreBuilder};
 use pyo3::prelude::*;
 use sha3::{Digest, Sha3_256};
 use std::fs::{self, File};
@@ -85,6 +86,7 @@ fn find_dock_root(start_path: Option<String>) -> PyResult<Option<String>> {
 
 #[pyfunction]
 fn list_all_files(working_dir: &str) -> PyResult<Vec<String>> {
+    let matcher = get_dockignore_matcher();
     let base = Path::new(working_dir);
     let files = WalkDir::new(base)
         .into_iter()
@@ -92,19 +94,23 @@ fn list_all_files(working_dir: &str) -> PyResult<Vec<String>> {
             entry.ok().and_then(|e| {
                 let path = e.path();
                 // Skip internal directories
-                let path_str = path.to_string_lossy();
-                if path_str.contains(".dock")
-                    || path_str.contains("__pycache__")
-                    || path_str.contains(".git")
+                // Skip internal directories
+                if path.to_string_lossy().contains(".dock")
+                    || path.to_string_lossy().contains("__pycache__")
+                    || path.to_string_lossy().contains(".git")
                 {
                     return None;
                 }
 
                 if e.file_type().is_file() {
                     // Get relative path
-                    path.strip_prefix(base)
-                        .ok()
-                        .map(|rel| rel.to_string_lossy().to_string())
+                    if let Ok(rel_path) = path.strip_prefix(base) {
+                        if is_ignored(rel_path, &matcher) {
+                            return None;
+                        }
+                        return Some(rel_path.to_string_lossy().to_string());
+                    }
+                    None
                 } else {
                     None
                 }
@@ -112,6 +118,41 @@ fn list_all_files(working_dir: &str) -> PyResult<Vec<String>> {
         })
         .collect();
     Ok(files)
+}
+
+/// Reads .dockignore from the current directory and returns a matcher.
+fn get_dockignore_matcher() -> Option<Gitignore> {
+    let dockignore_path = Path::new(".dockignore");
+    if dockignore_path.exists() {
+        let mut builder = GitignoreBuilder::new(".");
+        builder.add(dockignore_path);
+        let gitignore = builder.build().unwrap();
+        Some(gitignore)
+    } else {
+        None
+    }
+}
+
+/// Check if path should be ignored
+fn is_ignored(path: &Path, matcher: &Option<Gitignore>) -> bool {
+    if let Some(gitignore) = matcher {
+        gitignore.matched(path, false).is_ignore()
+    } else {
+        false
+    }
+}
+
+#[pyfunction]
+fn filter_ignored_files(files: Vec<String>) -> PyResult<Vec<String>> {
+    let matcher = get_dockignore_matcher();
+    let mut result = Vec::new();
+    for path_str in files.iter() {
+        let path = std::path::Path::new(&path_str);
+        if !is_ignored(path, &matcher) {
+            result.push(path_str.to_string());
+        }
+    }
+    Ok(result)
 }
 
 /// A Python module implemented in Rust.
@@ -123,5 +164,6 @@ fn ruxpy(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(save_starlog, m)?)?;
     m.add_function(wrap_pyfunction!(find_dock_root, m)?)?;
     m.add_function(wrap_pyfunction!(list_all_files, m)?)?;
+    m.add_function(wrap_pyfunction!(filter_ignored_files, m)?)?;
     Ok(())
 }
