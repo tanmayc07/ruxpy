@@ -8,6 +8,7 @@ from .ruxpy import (
     save_starlog,
     find_dock_root,
     list_all_files,
+    filter_ignored_files,
 )
 
 __all__ = [
@@ -17,4 +18,5 @@ __all__ = [
     "save_starlog",
     "find_dock_root",
     "list_all_files",
+    "filter_ignored_files",
 ]
