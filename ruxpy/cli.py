@@ -325,15 +325,31 @@ def beam(files):
     course_name = content.split(":")[-1].strip().split("/")[-1]
 
     current_starlog_path = os.path.join(paths["links"], "helm", course_name)
-    with open(current_starlog_path, "r") as f:
-        current_starlog_hash = f.read()
 
-    starlog_obj_path = os.path.join(
-        paths["dock"], "starlogs", current_starlog_hash[:2], current_starlog_hash[2:]
-    )
+    try:
+        with open(current_starlog_path, "r") as f:
+            current_starlog_hash = f.read()
 
-    with open(starlog_obj_path, "r") as f:
-        starlog_obj = json.load(f)
+        if not current_starlog_hash:
+            # No starlogs yet
+            starlog_obj = {"files": {}}
+        else:
+            starlog_obj_path = os.path.join(
+                paths["dock"],
+                "starlogs",
+                current_starlog_hash[:2],
+                current_starlog_hash[2:],
+            )
+
+            if not os.path.isfile(starlog_obj_path):
+                # No starlogs yet
+                starlog_obj = {"files": {}}
+            else:
+                with open(starlog_obj_path, "r") as f:
+                    starlog_obj = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        # No starlogs yet
+        starlog_obj = {"files": {}}
 
     click.echo(f"{click.style('[INFO]', fg="yellow")} " "Starting to beam the files...")
 
@@ -343,6 +359,14 @@ def beam(files):
         percent_done = int((idx / total) * 100)
 
         if file in starlog_obj["files"]:
+            if not os.path.exists(file):
+                # File is deleted or missing
+                click.echo(
+                    f"{file}\t\t[{percent_done}%] "
+                    f"{click.style('[skipped: not found]', fg='yellow')}"
+                )
+                continue
+
             with open(file, "rb") as f:
                 content = f.read()
 
@@ -360,13 +384,6 @@ def beam(files):
                     )}"
                 )
                 continue
-
-        if not os.path.exists(file):
-            click.echo(
-                f"{file}\t\t[{percent_done}%] "
-                f"{click.style('[skipped: not found]', fg='yellow')}"
-            )
-            continue
 
         click.echo(f"{file}\t\t[...{percent_done}%]")
 

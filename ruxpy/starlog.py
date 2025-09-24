@@ -109,9 +109,25 @@ Files yet to be beamed:
             timestamp = datetime.now().isoformat()
 
             staged_hash_list = {}
+            saved_count = 0
             for file in staged_files:
+                # if file is deleted or missing from working_dir, then skip it
+                if not os.path.exists(file):
+                    click.echo(
+                        f"{click.style('[WARNING]', fg='yellow')} "
+                        f"File '{file}' was deleted and will not be committed."
+                    )
+                    continue
                 hash = ruxpy.save_blob(paths["repo"], file)
                 staged_hash_list[file] = hash
+                saved_count += 1
+
+            if saved_count == 0:
+                click.echo(
+                    f"{click.style('[WARNING]', fg='yellow')} "
+                    f"No files to make a starlog entry!"
+                )
+                return
 
             helm_path = paths["helm"]
             course_path = ""
