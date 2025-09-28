@@ -22,11 +22,7 @@ def starlog(create, message, list):
 
     is_proper = util.check_spacedock(paths)
     if not is_proper:
-        click.echo(
-            f"{click.style('[ERROR]', fg='red')} "
-            "The spacedock is not initialized. "
-            "Please run 'ruxpy start'"
-        )
+        util.echo_error("The spacedock is not initialized. " "Please run 'ruxpy start'")
         return
 
     if list:
@@ -46,9 +42,7 @@ def starlog(create, message, list):
                     starlogs_obj_list.append(starlog_obj)
 
         if not found_logs:
-            click.echo(
-                f"{click.style("[INFO]", fg="yellow")} " "No starlog entries found!"
-            )
+            util.echo_info("No starlog entries found!")
             return
 
         starlogs_obj_list.sort(key=lambda x: x["timestamp"], reverse=True)
@@ -72,9 +66,7 @@ def starlog(create, message, list):
 
         if len(staged_files) == 0:
             unstaged_files = util.list_unstaged_files(".")
-            click.echo(
-                f"{click.style('[WARNING]', fg="yellow")} " "Files are not beamed yet."
-            )
+            util.echo_warning("Files are not beamed yet.")
 
             click.echo(
                 """
@@ -99,8 +91,7 @@ Files yet to be beamed:
                 author = config["name"]
                 email = config["email"]
             except exceptions.NonExistentKey:
-                click.echo(
-                    f"{click.style('[ERROR]', fg="red")} "
+                util.echo_error(
                     "Please set name and email for starlogs\n"
                     " (Use ruxpy config -sn <name> -se <email>)"
                 )
@@ -113,8 +104,7 @@ Files yet to be beamed:
             for file in staged_files:
                 # if file is deleted or missing from working_dir, then skip it
                 if not os.path.exists(file):
-                    click.echo(
-                        f"{click.style('[WARNING]', fg='yellow')} "
+                    util.echo_warning(
                         f"File '{file}' was deleted and will not be committed."
                     )
                     continue
@@ -123,10 +113,7 @@ Files yet to be beamed:
                 saved_count += 1
 
             if saved_count == 0:
-                click.echo(
-                    f"{click.style('[WARNING]', fg='yellow')} "
-                    f"No files to make a starlog entry!"
-                )
+                util.echo_warning("No files to make a starlog entry!")
                 return
 
             helm_path = paths["helm"]
@@ -172,10 +159,7 @@ Files yet to be beamed:
                 try:
                     parent_files = util.load_starlog_files(paths, parent)
                 except Exception:
-                    click.echo(
-                        f"{click.style("[ERROR]", fg="red")} "
-                        "Opening parent starlog failed!"
-                    )
+                    util.echo_error("Opening parent starlog failed!")
                     return
 
                 all_files = util.list_repo_files(paths["repo"])
@@ -209,14 +193,10 @@ Files yet to be beamed:
             with open(paths["stage"], "w") as f:
                 json.dump([], f)
 
-            click.echo(
-                f"{click.style('[SUCCESS]', fg="green")} "
-                "Starlog entry saved! Next course?"
-            )
+            util.echo_success("Starlog entry saved! Next course?")
 
         else:
-            click.echo(
-                f"{click.style('[ERROR]', fg="red")} "
+            util.echo_error(
                 """Please include a message
  (Use ruxpy starlog -cm to create a commit with a message.)"""
             )

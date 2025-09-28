@@ -32,10 +32,7 @@ def config(set_username, set_email, set_name):
         with open(config_path, "r") as f:
             config = tomlkit.parse(f.read())
     except (FileNotFoundError, exceptions.ParseError):
-        click.echo(
-            f"{click.style('[ERROR]', fg="red")} "
-            "Spacedock is not initialized. No .dock/ found."
-        )
+        util.echo_error("Spacedock is not initialized. No .dock/ found.")
         return
 
     if set_username:
@@ -48,9 +45,7 @@ def config(set_username, set_email, set_name):
     with open(config_path, "w") as f:
         f.write(tomlkit.dumps(config))
 
-    click.echo(
-        f"{click.style('[SUCCESS]', fg="green")} " "Config updated successfully!"
-    )
+    util.echo_success("Config updated successfully!")
 
 
 @main.command("start")
@@ -151,21 +146,13 @@ def scan():
     # check for spacedock
     dock_root = util.find_dock_root_py()
     if dock_root is None:  # Not a ruxpy repository
-        click.echo(
-            f"{click.style('[ERROR]', fg='red')} "
-            "The spacedock is not initialized. "
-            "Please run 'ruxpy start'"
-        )
+        util.echo_error("The spacedock is not initialized. " "Please run 'ruxpy start'")
         return
     else:
         paths = util.get_paths(dock_root)
         is_proper = util.check_spacedock(paths)
         if not is_proper:
-            click.echo(
-                f"{click.style('[ERROR]', fg='red')} "
-                "The spacedock is corrupted. "
-                "Please run 'ruxpy start'"
-            )
+            util.echo_error("The spacedock is corrupted. " "Please run 'ruxpy start'")
             return
 
     # Scan the spacedock
@@ -180,11 +167,7 @@ def scan():
     # Read staging area
     stage_path = paths["stage"]
     if not os.path.exists(stage_path):
-        click.echo(
-            f"{click.style('[ERROR]', fg='red')} "
-            "The spacedock is corrupted. "
-            "Please run 'ruxpy start'"
-        )
+        util.echo_error("The spacedock is corrupted. " "Please run 'ruxpy start'")
         return
 
     with open(stage_path, "r") as f:
@@ -203,7 +186,7 @@ def scan():
     if not os.path.isfile(starlog_obj_path):
         unstaged_files = util.list_unstaged_files(paths["repo"])
 
-        click.echo(f"{click.style('[INFO]', fg='yellow')} " "No starlog entries found!")
+        util.echo_info("No starlog entries found!")
 
         if len(staged_files) > 0:
             click.echo()
@@ -288,21 +271,13 @@ def beam(files):
     try:
         paths = util.get_paths()
     except Exception:
-        click.echo(
-            f"{click.style('[ERROR]', fg='red')} "
-            "The spacedock is not initialized. "
-            "Please run 'ruxpy start'"
-        )
+        util.echo_error("The spacedock is not initialized. " "Please run 'ruxpy start'")
         return
 
     # Check if spacedock is initialized
     is_proper = util.check_spacedock(paths)
     if not is_proper:
-        click.echo(
-            f"{click.style('[ERROR]', fg='red')} "
-            "The spacedock is not initialized. "
-            "Please run 'ruxpy start'"
-        )
+        util.echo_error("The spacedock is not initialized. " "Please run 'ruxpy start'")
         return
 
     stage_path = paths["stage"]
@@ -312,8 +287,8 @@ def beam(files):
     files_not_ignored = filter_ignored_files(files_to_check)
 
     if len(files_not_ignored) == 0:
-        click.echo(
-            f"{click.style('[INFO]', fg='yellow')} No files beamed!\n"
+        util.echo_info(
+            "No files beamed!\n"
             "If you think it's unexpected, check if .dockignore is present."
         )
         return
@@ -351,7 +326,7 @@ def beam(files):
         # No starlogs yet
         starlog_obj = {"files": {}}
 
-    click.echo(f"{click.style('[INFO]', fg="yellow")} " "Starting to beam the files...")
+    util.echo_info("Starting to beam the files...")
 
     # only append if its not staged previously
     total = len(files_not_ignored)
@@ -396,7 +371,7 @@ def beam(files):
     feedback = """Files successfully beamed to the spacedock.
 Use ruxpy starlog to record."""
 
-    click.echo(f"{click.style('[SUCCESS]', fg='green')} " f"{feedback}")
+    util.echo_success(f"{feedback}")
 
 
 if __name__ == "__main__":
