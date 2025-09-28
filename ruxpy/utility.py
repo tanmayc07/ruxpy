@@ -62,7 +62,7 @@ def check_spacedock(paths):
 
 
 def list_repo_files(repo_path) -> List[str]:
-    files: List[str] = list_all_files(repo_path)
+    files: List[str] = list_all_files(str(repo_path))
     return files
 
 
