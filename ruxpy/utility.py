@@ -1,6 +1,7 @@
 import os
 import json
 from typing import List
+import click
 from ruxpy import find_dock_root, list_all_files
 
 required_items = {
@@ -120,3 +121,19 @@ def load_starlog_files(paths, starlog_hash):
     with open(obj_file, "r") as f:
         starlog_obj = json.load(f)
     return starlog_obj.get("files", {})
+
+
+def echo_error(msg):
+    click.echo(f"{click.style('[ERROR]', fg="red")} " f"{msg}")
+
+
+def echo_warning(msg):
+    click.echo(f"{click.style('[WARNING]', fg='yellow')} " f"{msg}")
+
+
+def echo_info(msg):
+    click.echo(f"{click.style('[INFO]', fg='yellow')} " f"{msg}")
+
+
+def echo_success(msg):
+    click.echo(f"{click.style('[SUCCESS]', fg='green')} " f"{msg}")
