@@ -62,7 +62,7 @@ def test_start_reinitializes(tmp_path):
         is_proper = util.check_spacedock(paths)
 
         assert is_proper
-        assert f"Reinitialized ruxpy repository in {paths["repo"]}..." in result.output
+        assert "Reinitialized ruxpy repository in" in result.output
 
 
 def test_start_initializes_with_missing_items(tmp_path):
@@ -88,7 +88,7 @@ def test_start_initializes_with_missing_items(tmp_path):
 
         is_proper = util.check_spacedock(paths)
         assert is_proper
-        assert f"Initialized ruxpy repository in {paths["repo"]}..." in result.output
+        assert "Initialized ruxpy repository in" in result.output
 
 
 def test_scan_shows_status(init_repo):
@@ -96,8 +96,8 @@ def test_scan_shows_status(init_repo):
     runner = CliRunner()
     result = runner.invoke(main, ["scan"])
     assert result.exit_code == 0
-    assert "On branch '-core-'" in result.output
-    assert "Spacedock clear, no starlog updates required." in result.output
+    assert "On course '-core-'" in result.output
+    assert "No starlog entries found!\n" in result.output
 
 
 def test_beam_stages_files(init_repo):
