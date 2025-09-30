@@ -4,7 +4,7 @@ import tomlkit
 import pytest
 from click.testing import CliRunner
 from ruxpy.cli import main
-from ruxpy import utility as util
+from ruxpy import get_paths, check_spacedock
 
 
 @pytest.fixture
@@ -28,8 +28,8 @@ def test_start_creates_spacedock(tmp_path):
         os.chdir(repo_path)
         result = runner.invoke(main, ["start"])
 
-        paths = util.get_paths(repo_path)
-        is_proper = util.check_spacedock(paths)
+        paths = get_paths(repo_path)
+        is_proper = check_spacedock(paths)
 
         assert is_proper
         assert f"Initialized ruxpy repository in {paths["repo"]}..." in result.output
@@ -42,8 +42,8 @@ def test_start_creates_dock_at_path(tmp_path):
     runner = CliRunner()
     _ = runner.invoke(main, ["start", str(test_repo)])
 
-    paths = util.get_paths(test_repo)
-    is_proper = util.check_spacedock(paths)
+    paths = get_paths(test_repo)
+    is_proper = check_spacedock(paths)
 
     assert is_proper
 
@@ -58,8 +58,8 @@ def test_start_reinitializes(tmp_path):
         _ = runner.invoke(main, ["start"])
         result = runner.invoke(main, ["start"])
 
-        paths = util.get_paths(repo_path)
-        is_proper = util.check_spacedock(paths)
+        paths = get_paths(repo_path)
+        is_proper = check_spacedock(paths)
 
         assert is_proper
         assert "Reinitialized ruxpy repository in" in result.output
@@ -74,7 +74,7 @@ def test_start_initializes_with_missing_items(tmp_path):
         os.chdir(repo_path)
         _ = runner.invoke(main, ["start"])
 
-        paths = util.get_paths(repo_path)
+        paths = get_paths(repo_path)
 
         config_path = repo_path / ".dock" / "config.toml"
         if config_path.exists():
@@ -86,7 +86,7 @@ def test_start_initializes_with_missing_items(tmp_path):
 
         result = runner.invoke(main, ["start"])
 
-        is_proper = util.check_spacedock(paths)
+        is_proper = check_spacedock(paths)
         assert is_proper
         assert "Initialized ruxpy repository in" in result.output
 

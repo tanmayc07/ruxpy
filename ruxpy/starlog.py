@@ -6,7 +6,19 @@ import tomlkit
 from tomlkit import exceptions
 import click
 from ruxpy import ruxpy
-from . import utility as util
+from ruxpy import (
+    echo_error,
+    echo_info,
+    echo_warning,
+    echo_success,
+    safe_load_staged_files,
+    find_dock_root_py,
+    get_paths,
+    check_spacedock,
+    list_unstaged_files,
+    load_starlog_files,
+    list_repo_files,
+)
 
 
 @click.command()
@@ -17,12 +29,12 @@ from . import utility as util
 @click.option("-l", "--list", is_flag=True, help="List all starlog entries (commits)")
 def starlog(create, message, list):
     # Find the root and check integrity
-    base_path = util.find_dock_root_py()
-    paths = util.get_paths(base_path)
+    base_path = find_dock_root_py()
+    paths = get_paths(base_path)
 
-    is_proper = util.check_spacedock(paths)
+    is_proper = check_spacedock(paths)
     if not is_proper:
-        util.echo_error("The spacedock is not initialized. " "Please run 'ruxpy start'")
+        echo_error("The spacedock is not initialized. " "Please run 'ruxpy start'")
         return
 
     if list:
@@ -42,7 +54,7 @@ def starlog(create, message, list):
                     starlogs_obj_list.append(starlog_obj)
 
         if not found_logs:
-            util.echo_info("No starlog entries found!")
+            echo_info("No starlog entries found!")
             return
 
         starlogs_obj_list.sort(key=lambda x: x["timestamp"], reverse=True)
@@ -62,11 +74,11 @@ def starlog(create, message, list):
 
     if create:
         stage_path = os.path.join(paths["dock"], "stage")
-        staged_files = util.list_staged_files(stage_path)
+        staged_files = safe_load_staged_files(stage_path)
 
         if len(staged_files) == 0:
-            unstaged_files = util.list_unstaged_files(".")
-            util.echo_warning("Files are not beamed yet.")
+            unstaged_files = list_unstaged_files(".")
+            echo_warning("Files are not beamed yet.")
 
             click.echo(
                 """
@@ -91,7 +103,7 @@ Files yet to be beamed:
                 author = config["name"]
                 email = config["email"]
             except exceptions.NonExistentKey:
-                util.echo_error(
+                echo_error(
                     "Please set name and email for starlogs\n"
                     " (Use ruxpy config -sn <name> -se <email>)"
                 )
@@ -104,7 +116,7 @@ Files yet to be beamed:
             for file in staged_files:
                 # if file is deleted or missing from working_dir, then skip it
                 if not os.path.exists(file):
-                    util.echo_warning(
+                    echo_warning(
                         f"File '{file}' was deleted and will not be committed."
                     )
                     continue
@@ -113,7 +125,7 @@ Files yet to be beamed:
                 saved_count += 1
 
             if saved_count == 0:
-                util.echo_warning("No files to make a starlog entry!")
+                echo_warning("No files to make a starlog entry!")
                 return
 
             helm_path = paths["helm"]
@@ -157,12 +169,12 @@ Files yet to be beamed:
 
             if starlog_obj["parent"] is not None:
                 try:
-                    parent_files = util.load_starlog_files(paths, parent)
+                    parent_files = load_starlog_files(paths, parent)
                 except Exception:
-                    util.echo_error("Opening parent starlog failed!")
+                    echo_error("Opening parent starlog failed!")
                     return
 
-                all_files = util.list_repo_files(paths["repo"])
+                all_files = list_repo_files(paths["repo"])
                 current_hashes = {}
                 for file in all_files:
                     with open(file, "rb") as f:
@@ -193,10 +205,10 @@ Files yet to be beamed:
             with open(paths["stage"], "w") as f:
                 json.dump([], f)
 
-            util.echo_success("Starlog entry saved! Next course?")
+            echo_success("Starlog entry saved! Next course?")
 
         else:
-            util.echo_error(
+            echo_error(
                 """Please include a message
  (Use ruxpy starlog -cm to create a commit with a message.)"""
             )
