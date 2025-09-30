@@ -1,8 +1,8 @@
 import os
 from ruxpy.cli import main
-from ruxpy.utility import (
+from ruxpy import (
     list_repo_files,
-    list_staged_files,
+    load_staged_files,
     list_unstaged_files,
     echo_success,
     echo_error,
@@ -26,7 +26,7 @@ def test_list_staged_files(tmp_path):
     runner.invoke(main, ["beam", "file1.txt", "file2.txt"])
 
     staged_path = os.path.join(test_repo, ".dock", "stage")
-    staged_files = list_staged_files(staged_path)
+    staged_files = load_staged_files(staged_path)
 
     assert set(staged_files) == {"file1.txt", "file2.txt"}
 
