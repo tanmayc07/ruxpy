@@ -76,8 +76,8 @@ def test_starlog_clears_stage_if_all_beamed_files_deleted(init_repo):
     (init_repo / "file2.txt").write_text("world")
     runner.invoke(main, ["beam", "file1.txt", "file2.txt"])
 
-    os.remove(init_repo / "file1.txt")
-    os.remove(init_repo / "file2.txt")
+    (init_repo / "file1.txt").unlink()
+    (init_repo / "file2.txt").unlink()
     assert not os.path.exists(init_repo / "file1.txt")
     assert not os.path.exists(init_repo / "file2.txt")
 
