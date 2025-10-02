@@ -126,6 +126,8 @@ Files yet to be beamed:
 
             if saved_count == 0:
                 echo_warning("No files to make a starlog entry!")
+                with open(paths["stage"], "w") as f:
+                    json.dump([], f)
                 return
 
             helm_path = paths["helm"]
