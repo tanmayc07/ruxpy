@@ -68,3 +68,21 @@ def test_starlog_list_without_entries(init_repo):
     runner = CliRunner()
     result = runner.invoke(main, ["starlog", "-l"])
     assert "[INFO] No starlog entries found!" in result.output
+
+
+def test_starlog_clears_stage_if_all_beamed_files_deleted(init_repo):
+    runner = CliRunner()
+    (init_repo / "file1.txt").write_text("hello")
+    (init_repo / "file2.txt").write_text("world")
+    runner.invoke(main, ["beam", "file1.txt", "file2.txt"])
+
+    os.remove(init_repo / "file1.txt")
+    os.remove(init_repo / "file2.txt")
+    assert not os.path.exists(init_repo / "file1.txt")
+    assert not os.path.exists(init_repo / "file2.txt")
+
+    runner.invoke(main, ["config", "-sn", "n", "-se", "e"])
+    runner.invoke(main, ["starlog", "-cm", "init"])
+
+    with open(init_repo / ".dock" / "stage") as f:
+        assert json.load(f) == []
