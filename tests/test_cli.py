@@ -207,3 +207,21 @@ def test_config_cmd_errors_when_config_missing(init_repo):
     result = runner.invoke(main, ["config", "-su", "picard2305"])
     assert result.exit_code == 0
     assert "[ERROR] Spacedock is not initialized. No .dock/ found." in result.output
+
+
+def test_course_lists_courses_and_current(init_repo):
+    repo_path = init_repo
+    helm = repo_path / ".dock" / "links" / "helm"
+    (helm / "feat-x").write_text("dummyhash1")
+    (helm / "bugfix").write_text("dummyhash2")
+    (helm / "main").write_text("dummyhash3")
+
+    (repo_path / ".dock" / "HELM").write_text("link: links/helm/feat-x")
+
+    runner = CliRunner()
+    result = runner.invoke(main, ["course"])
+
+    assert "[On Course] => feat-x" in result.output
+    assert "core" in result.output
+    assert "bugfix" in result.output
+    assert "main" in result.output
