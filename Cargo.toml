@@ -12,4 +12,5 @@ crate-type = ["cdylib"]
 ignore = "0.4.23"
 pyo3 = "0.25.0"
 sha3 = "0.10.8"
+tempfile = "3.23.0"
 walkdir = "2.5.0"
