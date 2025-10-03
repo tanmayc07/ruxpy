@@ -160,6 +160,45 @@ fn filter_ignored_files(files: Vec<String>) -> PyResult<Vec<String>> {
     Ok(result)
 }
 
+fn list_course_names(helm_path: &Path) -> Vec<String> {
+    let helm_dir = Path::new(helm_path);
+    let files = WalkDir::new(helm_dir)
+        .min_depth(1)
+        .max_depth(1)
+        .into_iter()
+        .filter_map(|entry| {
+            entry.ok().and_then(|e| {
+                if e.file_type().is_file() {
+                    e.file_name().to_str().map(|s| s.to_string())
+                } else {
+                    None
+                }
+            })
+        })
+        .collect();
+    files
+}
+
+fn get_current_course(current_course_path: &Path) -> String {
+    let current_course_path = Path::new(current_course_path);
+    let contents =
+        fs::read_to_string(current_course_path).expect("Failed to read current course file");
+    let mut parts = contents.splitn(2, ':');
+    let current_course = parts.nth(1).unwrap();
+    let current_course_name = current_course.trim().rsplit('/').next().unwrap();
+    current_course_name.to_string()
+}
+
+#[pyfunction]
+fn get_courses_and_current(
+    helm_path: &str,
+    current_course_path: &str,
+) -> PyResult<(Vec<String>, String)> {
+    let courses = list_course_names(Path::new(helm_path));
+    let current = get_current_course(Path::new(current_course_path));
+    Ok((courses, current))
+}
+
 /// A Python module implemented in Rust.
 #[pymodule]
 fn ruxpy(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -170,5 +209,42 @@ fn ruxpy(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(find_dock_root, m)?)?;
     m.add_function(wrap_pyfunction!(list_all_files, m)?)?;
     m.add_function(wrap_pyfunction!(filter_ignored_files, m)?)?;
+    m.add_function(wrap_pyfunction!(get_courses_and_current, m)?)?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use std::path::Path;
+
+    #[test]
+    fn test_get_current_course() {
+        let input = Path::new(".dock/HELM");
+        let result = get_current_course(input);
+        assert_eq!(result, "core");
+    }
+
+    #[test]
+    fn test_list_course_names() {
+        // Setup
+        let temp_dir = tempfile::tempdir().unwrap();
+        let helm_dir = temp_dir.path().join("links/helm");
+        fs::create_dir_all(&helm_dir).unwrap();
+
+        // create course files
+        let courses = vec!["main", "core", "feat-x", "bugfix", "feat-y"];
+        for course in &courses {
+            let course_path = helm_dir.join(course);
+            fs::write(&course_path, "dummyhash").unwrap();
+        }
+
+        let result = list_course_names(&helm_dir);
+
+        for course in &courses {
+            assert!(result.contains(&course.to_string()));
+        }
+        assert_eq!(result.len(), courses.len())
+    }
 }
