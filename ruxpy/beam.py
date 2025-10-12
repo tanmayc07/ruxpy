@@ -3,9 +3,7 @@ import click
 import json
 import hashlib
 from ruxpy import (
-    echo_error,
-    echo_info,
-    echo_success,
+    Messages,
     safe_load_staged_files,
     get_paths,
     check_spacedock,
@@ -22,13 +20,17 @@ def beam(files):
     try:
         paths = get_paths()
     except Exception:
-        echo_error("The spacedock is not initialized. " "Please run 'ruxpy start'")
+        Messages.echo_error(
+            "The spacedock is not initialized. " "Please run 'ruxpy start'"
+        )
         return
 
     # Check if spacedock is initialized
     is_proper = check_spacedock(paths)
     if not is_proper:
-        echo_error("The spacedock is not initialized. " "Please run 'ruxpy start'")
+        Messages.echo_error(
+            "The spacedock is not initialized. " "Please run 'ruxpy start'"
+        )
         return
 
     stage_path = paths["stage"]
@@ -38,7 +40,7 @@ def beam(files):
     files_not_ignored = filter_ignored_files(files_to_check)
 
     if len(files_not_ignored) == 0:
-        echo_info(
+        Messages.echo_info(
             "No files beamed!\n"
             "If you think it's unexpected, check if .dockignore is present."
         )
@@ -77,7 +79,7 @@ def beam(files):
         # No starlogs yet
         starlog_obj = {"files": {}}
 
-    echo_info("Starting to beam the files...")
+    Messages.echo_info("Starting to beam the files...")
 
     # only append if its not staged previously
     total = len(files_not_ignored)
@@ -122,4 +124,4 @@ def beam(files):
     feedback = """Files successfully beamed to the spacedock.
 Use ruxpy starlog to record."""
 
-    echo_success(f"{feedback}")
+    Messages.echo_success(f"{feedback}")

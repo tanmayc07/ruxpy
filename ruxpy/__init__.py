@@ -1,7 +1,7 @@
 __version__ = "1.0.0"
 
-from ruxpy.utils.config import read_config, write_config
-from ruxpy.utils.messages import echo_error, echo_info, echo_success, echo_warning
+from ruxpy.utils.config import Config
+from ruxpy.utils.messages import Messages
 from ruxpy.utils.course import (
     get_course_name,
     list_repo_files,
@@ -40,8 +40,6 @@ __all__ = [
     "Courses",
     "Blob",
     # Python utils
-    "read_config",
-    "write_config",
     "get_course_name",
     "get_latest_starlog_hash",
     "check_spacedock",
@@ -55,8 +53,6 @@ __all__ = [
     "get_paths",
     "find_dock_root_py",
     "get_missing_spacedock_items",
-    "echo_error",
-    "echo_info",
-    "echo_warning",
-    "echo_success",
+    "Messages",
+    "Config",
 ]

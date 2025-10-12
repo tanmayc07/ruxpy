@@ -6,8 +6,7 @@ from ruxpy import (
     get_course_name,
     check_stage_path_exists,
     load_staged_files,
-    echo_error,
-    echo_info,
+    Messages,
     list_repo_files,
     find_dock_root_py,
     list_unstaged_files,
@@ -23,13 +22,17 @@ def scan():
     # check for spacedock
     dock_root = find_dock_root_py()
     if dock_root is None:  # Not a ruxpy repository
-        echo_error("The spacedock is not initialized. " "Please run 'ruxpy start'")
+        Messages.echo_error(
+            "The spacedock is not initialized. " "Please run 'ruxpy start'"
+        )
         return
     else:
         paths = get_paths(dock_root)
         is_proper = check_spacedock(paths)
         if not is_proper:
-            echo_error("The spacedock is corrupted. " "Please run 'ruxpy start'")
+            Messages.echo_error(
+                "The spacedock is corrupted. " "Please run 'ruxpy start'"
+            )
             return
 
     # Scan the spacedock
@@ -39,7 +42,7 @@ def scan():
     # Read staging area
     stage_path = paths["stage"]
     if not check_stage_path_exists(stage_path):
-        echo_error("The spacedock is corrupted. " "Please run 'ruxpy start'")
+        Messages.echo_error("The spacedock is corrupted. " "Please run 'ruxpy start'")
         return
 
     try:
@@ -60,7 +63,7 @@ def scan():
     if not os.path.isfile(starlog_obj_path):
         unstaged_files = list_unstaged_files(paths["repo"])
 
-        echo_info("No starlog entries found!")
+        Messages.echo_info("No starlog entries found!")
 
         if len(staged_files) > 0:
             click.echo()

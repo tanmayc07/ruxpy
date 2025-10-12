@@ -4,10 +4,7 @@ from ruxpy import (
     list_repo_files,
     load_staged_files,
     list_unstaged_files,
-    echo_success,
-    echo_error,
-    echo_info,
-    echo_warning,
+    Messages,
 )
 from click.testing import CliRunner
 
@@ -67,27 +64,27 @@ def test_list_repo_files(tmp_path):
 
 def test_echo_error(capsys):
     msg = "Spacedock is not initialized."
-    echo_error(msg)
+    Messages.echo_error(msg)
     captured = capsys.readouterr()
     assert f"[ERROR] {msg}" in captured.out
 
 
 def test_echo_warning(capsys):
     msg = "No files to make a starlog entry!"
-    echo_warning(msg)
+    Messages.echo_warning(msg)
     captured = capsys.readouterr()
     assert f"[WARNING] {msg}" in captured.out
 
 
 def test_echo_info(capsys):
     msg = "No files beamed yet"
-    echo_info(msg)
+    Messages.echo_info(msg)
     captured = capsys.readouterr()
     assert f"[INFO] {msg}" in captured.out
 
 
 def test_echo_success(capsys):
     msg = "Files beamed successfully"
-    echo_success(msg)
+    Messages.echo_success(msg)
     captured = capsys.readouterr()
     assert f"[SUCCESS] {msg}" in captured.out
