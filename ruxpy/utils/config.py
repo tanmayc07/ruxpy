@@ -2,16 +2,18 @@ import tomlkit
 from tomlkit import exceptions
 
 
-def read_config(path):
-    try:
-        with open(path, "r") as f:
-            config = tomlkit.parse(f.read())
-    except (FileNotFoundError, exceptions.ParseError):
-        return None
+class Config:
+    @staticmethod
+    def read_config(path):
+        try:
+            with open(path, "r") as f:
+                config = tomlkit.parse(f.read())
+        except (FileNotFoundError, exceptions.ParseError):
+            return None
 
-    return config
+        return config
 
-
-def write_config(path, config):
-    with open(path, "w") as f:
-        f.write(tomlkit.dumps(config))
+    @staticmethod
+    def write_config(path, config):
+        with open(path, "w") as f:
+            f.write(tomlkit.dumps(config))
