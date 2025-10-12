@@ -22,25 +22,23 @@ from ruxpy.utils.starlog import get_latest_starlog_hash, load_starlog_files
 # Import Rust extension and expose its functions
 from .ruxpy import (
     init_object_dir,
-    save_blob,
-    read_blob,
     save_starlog,
     find_dock_root,
     list_all_files,
     filter_ignored_files,
     Courses,
+    Blob,
 )
 
 __all__ = [
     # Rust extensions
     "init_object_dir",
-    "save_blob",
-    "read_blob",
     "save_starlog",
     "find_dock_root",
     "list_all_files",
     "filter_ignored_files",
     "Courses",
+    "Blob",
     # Python utils
     "read_config",
     "write_config",
