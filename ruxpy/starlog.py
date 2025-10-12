@@ -120,7 +120,7 @@ Files yet to be beamed:
                         f"File '{file}' was deleted and will not be committed."
                     )
                     continue
-                hash = ruxpy.save_blob(paths["repo"], file)
+                hash = ruxpy.Blob.save_blob(paths["repo"], file)
                 staged_hash_list[file] = hash
                 saved_count += 1
 
