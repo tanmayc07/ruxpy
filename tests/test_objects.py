@@ -1,5 +1,5 @@
 import os
-from ruxpy import init_object_dir, save_blob, read_blob
+from ruxpy import init_object_dir, Blob
 
 
 def test_object_store(tmp_path):
@@ -11,16 +11,16 @@ def test_object_store(tmp_path):
 
     init_object_dir(str(repo_path))
 
-    hash = save_blob(str(repo_path), "file1.txt")
+    hash = Blob.save_blob(str(repo_path), "file1.txt")
 
     obj_path = repo_path / ".dock" / "objects" / hash[:2] / hash[2:]
     assert obj_path.exists()
 
-    contents = read_blob(str(repo_path), hash)
+    contents = Blob.read_blob(str(repo_path), hash)
     assert contents == b"hello world"
 
     try:
-        read_blob(str(repo_path), "nonexistenthash")
+        Blob.read_blob(str(repo_path), "nonexistenthash")
         assert False, "Should have raised an error"
     except Exception:
         pass
