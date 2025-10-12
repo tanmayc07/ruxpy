@@ -1,7 +1,7 @@
 import os
 import json
 from .init import find_dock_root_py, get_paths
-from .starlog import get_latest_starlog_hash, load_starlog_files
+from .starlog import Starlog
 from ..ruxpy import list_all_files
 
 
@@ -38,10 +38,10 @@ def list_unstaged_files(repo_path: str):
     repo_path = find_dock_root_py(repo_path)
     paths = get_paths(repo_path)
 
-    latest_starlog_hash = get_latest_starlog_hash(paths)
+    latest_starlog_hash = Starlog.get_latest_starlog_hash(paths)
 
     try:
-        committed_files = load_starlog_files(paths, latest_starlog_hash)
+        committed_files = Starlog.load_starlog_files(paths, latest_starlog_hash)
     except Exception:
         committed_files = []
 

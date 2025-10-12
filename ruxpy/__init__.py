@@ -17,7 +17,7 @@ from ruxpy.utils.init import (
     get_missing_spacedock_items,
     check_spacedock,
 )
-from ruxpy.utils.starlog import get_latest_starlog_hash, load_starlog_files
+from ruxpy.utils.starlog import Starlog
 
 # Import Rust extension and expose its functions
 from .ruxpy import (
@@ -41,18 +41,17 @@ __all__ = [
     "Blob",
     # Python utils
     "get_course_name",
-    "get_latest_starlog_hash",
     "check_spacedock",
     "list_repo_files",
     "load_staged_files",
     "safe_load_staged_files",
     "check_stage_path_exists",
     "list_unstaged_files",
-    "load_starlog_files",
     "required_items",
     "get_paths",
     "find_dock_root_py",
     "get_missing_spacedock_items",
     "Messages",
     "Config",
+    "Starlog",
 ]
