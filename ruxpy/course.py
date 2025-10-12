@@ -4,7 +4,7 @@ from ruxpy import (
     find_dock_root_py,
     get_paths,
     check_spacedock,
-    get_courses_and_current,
+    Courses,
     echo_error,
 )
 
@@ -22,7 +22,7 @@ def course():
             echo_error("The spacedock is corrupted. " "Please run 'ruxpy start'")
             return
 
-    (courses, current) = get_courses_and_current(
+    (courses, current) = Courses.get_courses_and_current(
         os.path.join(paths["links"], "helm"), paths["helm"]
     )
 
