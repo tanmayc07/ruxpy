@@ -28,7 +28,7 @@ from .ruxpy import (
     find_dock_root,
     list_all_files,
     filter_ignored_files,
-    get_courses_and_current,
+    Courses,
 )
 
 __all__ = [
@@ -40,7 +40,7 @@ __all__ = [
     "find_dock_root",
     "list_all_files",
     "filter_ignored_files",
-    "get_courses_and_current",
+    "Courses",
     # Python utils
     "read_config",
     "write_config",
