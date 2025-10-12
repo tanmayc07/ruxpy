@@ -8,12 +8,12 @@ import click
 from ruxpy import ruxpy
 from ruxpy import (
     Messages,
+    Starlog,
     safe_load_staged_files,
     find_dock_root_py,
     get_paths,
     check_spacedock,
     list_unstaged_files,
-    load_starlog_files,
     list_repo_files,
 )
 
@@ -170,7 +170,7 @@ Files yet to be beamed:
 
             if starlog_obj["parent"] is not None:
                 try:
-                    parent_files = load_starlog_files(paths, parent)
+                    parent_files = Starlog.load_starlog_files(paths, parent)
                 except Exception:
                     Messages.echo_error("Opening parent starlog failed!")
                     return
