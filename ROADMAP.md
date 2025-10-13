@@ -4,17 +4,10 @@ This document outlines planned features, enhancements, and edge cases for the ru
 
 ## Upcoming Features
 
-### 1. Branch Management
-As per ruxpy nomenclature, a branch or seperate timeline will be named as a `course`. This feature will be provided using the command:\
-`ruxpy course [OPTIONS] [ARG]`
-
-Possible usage:
-
-- `ruxpy course` - Listing all the courses with highlight for current active course
-- `ruxpy course [-s | --set] <course-name>` - Create a new course
-- `ruxpy course [-d | --delete] <course-name>` - delete a course 
-
-> Note - As a design decision, the `core` course will be indestructible or default course. Also, since `core` can't be deleted, you need to be checked out on `core` to delete the last remaining course(other than `core` ofcourse).
+### 1. Tree Data Structure Implementation for Project States
+- Tree data structure implementation will represent the complete file and directory state of the project at each starlog entry.
+- Each starlog entry (commit) will reference a tree object, which records the hierarchy and content hashes of all files and folders.
+- This will enable efficient diffing, course switching and merging by allowing ruxpy to reconstruct and compare project states across history.
 
 ### 2. Switching Courses
 Course switching will be provided using seperate command for better UX. The command will be:\
