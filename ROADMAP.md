@@ -3,84 +3,36 @@
 This document outlines planned features, enhancements, and edge cases for the ruxpy version control system. It serves as a guide for future development and contributions.
 
 ## Upcoming Features
-### Limitations & Future Improvements for `ruxpy starlog`
-- Only staged files are included in the new commit; partial commits are not supported.
-- Modified tracked files not staged are not updated in the new commit (previous hash remains).
-- Deleted files are not detected or removed from the commit’s file list.
-- Renames are treated as deletion and addition, not as a rename.
-- Untracked files are not added unless explicitly staged; no warning or prompt for untracked files.
-- No merge/conflict logic; advanced workflows are not supported.
-- No validation of parent commit state for consistency (e.g., deleted/renamed files).
-- Commit message validation is not enforced (empty messages allowed).
 
-**Planned improvements:**
-- Add logic for deleted files and commit message validation.
-- Improve parent commit state management.
-- Support for renames and merges in future versions.
+### 1. Tree Data Structure Implementation for Project States
+- Tree data structure implementation will represent the complete file and directory state of the project at each starlog entry.
+- Each starlog entry (commit) will reference a tree object, which records the hierarchy and content hashes of all files and folders.
+- This will enable efficient diffing, course switching and merging by allowing ruxpy to reconstruct and compare project states across history.
 
-### 1. Enhanced `ruxpy scan` (Repository Status)
-- Detect and list all files in the working directory that have been:
-  - Modified since the last commit (starlog)
-  - Newly created (untracked)
-  - Deleted (missing from working directory but present in last commit)
-- Compare the current state of files against the last committed (starlog) state using blob hashes.
-- Show which files are staged (present in `.dock/stage`) and which are unstaged.
-- Advise users if files can be staged with `beam` or committed with `starlog`.
- Display a clear summary of repository status, including:
-   - Staged changes ready for commit
-   - Unstaged changes
-   - Untracked files
-   - Clean state (no changes)
+### 2. Switching Courses
+Course switching will be provided using seperate command for better UX. The command will be:\
+`ruxpy warp <course-name>`
 
- #### Planned Rust Refactor for Scan/Status
- - Move performance-critical and security-sensitive logic to Rust:
-   - Blob hashing and file comparison (for modified/untracked detection)
-   - Starlog (commit) reading and validation
-   - Staging area management (read/write and compare)
-   - Filesystem scanning (recursive listing, ignore rules, edge cases)
-   - .dock integrity checks
+### 3. Switching/Reverting on starlogs
+An essential feature for reverting on starlog entries or going back on some particular starlog discarding the starlogs in between. Will be provided using the command:\
+`ruxpy jump [OPTIONS] [STARLOG_HASH]`
 
- Python will orchestrate CLI and user interaction, calling Rust via PyO3 for heavy-lifting tasks.
-### 2. Edge Case Handling
-- Binary files: Properly detect and display status for non-text files.
-- Symlinks: Decide whether to track links or targets.
-- Ignored files: Support a `.dockignore` file to exclude files from status.
-- Renamed files: Detect and handle file renames.
-- Permission changes: Track changes in file permissions.
-- Large repositories: Optimize status checks for performance.
-- Nested repositories: Avoid confusion with repos inside repos.
-- Case sensitivity: Handle differences in filesystem case sensitivity.
-- Non-UTF8 filenames: Support unusual filename encodings.
+Possible usage:
 
-### 3. `ruxpy course` Branch Management
-- `ruxpy course -l`: List all branches ("courses") in the repository.
-- `ruxpy course -sw <branch>`: Switch to a particular branch.
-- `ruxpy course -c <branch>`: Create a new branch.
-
+- `ruxpy jump <starlog-hash>` - Move the starlog pointer to a specific starlog-hash. (like `git checkout <commit>`)
+- `ruxpy jump --back <number>` - Go back `<number>` number of starlogs. Like `git reset --hard HEAD~x`
+- `ruxpy jump --delete-latest` - Delete the latest starlog.
 
 ### 4. `ruxpy starlog`
-- `ruxpy starlog -l`: List all starlogs (commits) in the repository.
 - Interactive commit message: If `ruxpy starlog -c` is run without `-m`, open the default editor for the user to enter a commit message (similar to git).
-- Support for `-m` flag: Allow `ruxpy starlog -c -m "message"` or `ruxpy starlog -cm "message"` to commit with a message directly from the terminal.
 
-## Future Enhancements
+### 5. Config Management
+- Validations for config keys
+- Functionality to view the currently set config
 
-- Branch management and switching
-- Diff and patch generation
-- Merge and conflict resolution
-- Commit signing and verification
-- Integration with remote repositories
-- Advanced logging and history visualization
-
-- Config command improvements:
-  - Validation for config fields (e.g. email format, non-empty username/name)
-  - User feedback when no options are provided (show current config or helpful message)
-
-
-## Deployment & Release Plan
-
-- Plan to package and release ruxpy as a Nix package for easy installation and usage across platforms.
-- Provide reproducible development and deployment environments using Nix.
+### 6. Diffing
+This is a required feature for implementing advanced workflows like checking changes, merge conflicts etc.
+Yet to be designed.
 
 ## Data Integrity & Atomic Writes
 

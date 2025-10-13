@@ -37,6 +37,7 @@
 - No installation from PyPI is available; always use the latest release from GitHub.
 
 ### Commands
+---
 
 #### `start`
 **Usage:**
@@ -50,6 +51,8 @@ If executed without <path>, it initializes the project in current working direct
 
 Does not create any initial commit. 
 
+---
+
 #### `beam`
 **Usage:** `ruxpy beam <file>...`
 
@@ -58,6 +61,8 @@ Does not create any initial commit.
 Stages files for the next starlog (commit).
 
 Currently, there is no facility to use '.' or do bulk beam using any options. It is included in the feature roadmap.
+
+---
 
 #### `starlog`
 **Usage:** `ruxpy starlog [-l] [-cm <message>]`
@@ -78,6 +83,8 @@ Lists the previous starlog entries
 **--message**\
 Create a new starlog with the message. Currently, if message is not passed, returns an error specifying message required.
 
+---
+
 #### `scan`
 
 **Usage:** `ruxpy scan`
@@ -85,6 +92,8 @@ Create a new starlog with the message. Currently, if message is not passed, retu
 **DESCRIPTION**
 
 Shows the repository status, including beamed, modified, and untracked files.
+
+---
 
 #### `config`
 
@@ -94,13 +103,30 @@ Shows the repository status, including beamed, modified, and untracked files.
 
 Sets user configuration for starlogs.
 
+---
+
 #### `course`
 
-**Usage:** `ruxpy course`
+**Usage:** `ruxpy course [-d] [<course-name>]`
 
 **DESCRIPTION**
 
-Lists all branches (courses) and shows the current one. The default branch created when `ruxpy start` is executed is named `core`.
+Handles course management.
+
+**OPTIONS**
+
+**-d**\
+**--delete**\
+If executed with `ruxpy course -d <course-name>`, deletes a course from the project.
+
+If executed with `ruxpy course`, lists all branches (courses) and highlights the current one. The default branch created when `ruxpy start` is executed is named `core`.
+
+If executed with `ruxpy course <course-name>`, creates a new course from the current starlog.
+
+> Note - As a design decision, the `core` course will be indestructible or default course. Also, since `core` can't be deleted, you need to be checked out on `core` to delete the last remaining course(other than `core` ofcourse).
+
+---
+
 
 ### Examples
 

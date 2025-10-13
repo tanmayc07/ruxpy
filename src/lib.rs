@@ -1,8 +1,12 @@
 mod blob;
 mod courses;
+mod spacedock;
+mod starlog;
 
 use crate::blob::Blob;
 use crate::courses::Courses;
+use crate::spacedock::Spacedock;
+use crate::starlog::Starlog;
 
 use ignore::gitignore::{Gitignore, GitignoreBuilder};
 use pyo3::prelude::*;
@@ -140,8 +144,10 @@ fn ruxpy(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(find_dock_root, m)?)?;
     m.add_function(wrap_pyfunction!(list_all_files, m)?)?;
     m.add_function(wrap_pyfunction!(filter_ignored_files, m)?)?;
+    m.add_class::<Spacedock>()?;
     m.add_class::<Courses>()?;
     m.add_class::<Blob>()?;
+    m.add_class::<Starlog>()?;
     Ok(())
 }
 
