@@ -12,7 +12,7 @@ from ruxpy import (
 @click.command()
 @click.argument("course_name", required=False)
 @click.option("-d", "--delete", is_flag=True, help="Delete the course")
-def course(course_name: str, delete: str):
+def course(course_name: str, delete: bool):
     dock_root = find_dock_root_py()
     if dock_root is None:  # Not a ruxpy repository
         Messages.echo_error(
