@@ -1,4 +1,4 @@
-use crate::spacedock::HELM_DIR;
+use crate::spacedock::{HELM_DIR, HELM_FILE};
 use crate::starlog::Starlog;
 use pyo3::prelude::*;
 use std::{fs, path::PathBuf};
@@ -6,6 +6,16 @@ use walkdir::WalkDir;
 
 #[pyclass]
 pub struct Courses;
+
+impl Courses {
+    pub fn current_internal(path: &str) -> String {
+        let contents = fs::read_to_string(path).expect("Failed to read current course file");
+        let mut parts = contents.splitn(2, ':');
+        let current_course = parts.nth(1).unwrap();
+        let current_course_name = current_course.trim().rsplit('/').next().unwrap();
+        current_course_name.to_string()
+    }
+}
 
 #[pymethods]
 impl Courses {
@@ -30,11 +40,7 @@ impl Courses {
 
     #[staticmethod]
     pub fn current(path: &str) -> String {
-        let contents = fs::read_to_string(path).expect("Failed to read current course file");
-        let mut parts = contents.splitn(2, ':');
-        let current_course = parts.nth(1).unwrap();
-        let current_course_name = current_course.trim().rsplit('/').next().unwrap();
-        current_course_name.to_string()
+        Courses::current_internal(path)
     }
 
     #[staticmethod]
@@ -56,6 +62,31 @@ impl Courses {
                 Ok(())
             }
             Err(msg) => Err(pyo3::exceptions::PyRuntimeError::new_err(msg)),
+        }
+    }
+
+    #[staticmethod]
+    pub fn delete_course(name: &str) -> PyResult<()> {
+        let current_course = Courses::current_internal(HELM_FILE);
+        if current_course != name {
+            if name != "core" {
+                // delete name course
+                match fs::remove_file(PathBuf::from(HELM_DIR).join(name)) {
+                    Ok(()) => Ok(()),
+                    Err(msg) => Err(pyo3::exceptions::PyRuntimeError::new_err(format!(
+                        "{:?}",
+                        msg
+                    ))),
+                }
+            } else {
+                Err(pyo3::exceptions::PyRuntimeError::new_err(
+                    "Cannot delete course core",
+                ))
+            }
+        } else {
+            Err(pyo3::exceptions::PyRuntimeError::new_err(
+                "Warp to a different course first",
+            ))
         }
     }
 }

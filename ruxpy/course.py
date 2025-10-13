@@ -10,8 +10,9 @@ from ruxpy import (
 
 
 @click.command()
-@click.argument("branch_name", required=False)
-def course(branch_name: str):
+@click.argument("course_name", required=False)
+@click.option("-d", "--delete", is_flag=True, help="Delete the course")
+def course(course_name: str, delete: str):
     dock_root = find_dock_root_py()
     if dock_root is None:  # Not a ruxpy repository
         Messages.echo_error(
@@ -27,8 +28,22 @@ def course(branch_name: str):
             )
             return
 
-    if not branch_name:
-
+    if delete and course_name:
+        try:
+            Messages.echo_info(f"Deleting course: {course_name}")
+            Courses.delete_course(course_name)
+            Messages.echo_success(f"Successfully deleted course: {course_name}")
+        except Exception as e:
+            Messages.echo_error(str(e))
+    elif delete and not course_name:
+        Messages.echo_error("Please input the course name to delete")
+    elif course_name:
+        try:
+            Courses.create_course(course_name)
+            Messages.echo_success(f"course {course_name} set at warp speed!")
+        except Exception as e:
+            Messages.echo_error(str(e))
+    else:
         (courses, current) = Courses.get_courses_and_current(
             os.path.join(paths["links"], "helm"), paths["helm"]
         )
@@ -41,10 +56,3 @@ def course(branch_name: str):
                 continue
 
             click.echo(f"{padding}{course}")
-
-    else:
-        try:
-            Courses.create_course(branch_name)
-            Messages.echo_success(f"course {branch_name} set at warp speed!")
-        except Exception as e:
-            Messages.echo_error(str(e))
