@@ -68,25 +68,23 @@ impl Courses {
     #[staticmethod]
     pub fn delete_course(name: &str) -> PyResult<()> {
         let current_course = Courses::current_internal(HELM_FILE);
-        if current_course != name {
-            if name != "core" {
-                // delete name course
-                match fs::remove_file(PathBuf::from(HELM_DIR).join(name)) {
-                    Ok(()) => Ok(()),
-                    Err(msg) => Err(pyo3::exceptions::PyRuntimeError::new_err(format!(
-                        "{:?}",
-                        msg
-                    ))),
-                }
-            } else {
-                Err(pyo3::exceptions::PyRuntimeError::new_err(
-                    "Cannot delete course core",
-                ))
-            }
-        } else {
-            Err(pyo3::exceptions::PyRuntimeError::new_err(
+        if current_course == name {
+            return Err(pyo3::exceptions::PyRuntimeError::new_err(
                 "Warp to a different course first",
-            ))
+            ));
+        }
+        if name == "core" {
+            return Err(pyo3::exceptions::PyRuntimeError::new_err(
+                "Cannot delete course core",
+            ));
+        }
+        // delete name course
+        match fs::remove_file(PathBuf::from(HELM_DIR).join(name)) {
+            Ok(()) => Ok(()),
+            Err(msg) => Err(pyo3::exceptions::PyRuntimeError::new_err(format!(
+                "{:?}",
+                msg
+            ))),
         }
     }
 }
