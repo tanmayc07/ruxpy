@@ -10,7 +10,8 @@ from ruxpy import (
 
 
 @click.command()
-def course():
+@click.argument("branch_name", required=False)
+def course(branch_name: str):
     dock_root = find_dock_root_py()
     if dock_root is None:  # Not a ruxpy repository
         Messages.echo_error(
@@ -26,15 +27,24 @@ def course():
             )
             return
 
-    (courses, current) = Courses.get_courses_and_current(
-        os.path.join(paths["links"], "helm"), paths["helm"]
-    )
+    if not branch_name:
 
-    label = "[On Course] =>"
-    padding = " " * (len(label) + 1)
-    for course in courses:
-        if course == current:
-            click.echo(f"{click.style(label, fg="green")} {course}")
-            continue
+        (courses, current) = Courses.get_courses_and_current(
+            os.path.join(paths["links"], "helm"), paths["helm"]
+        )
 
-        click.echo(f"{padding}{course}")
+        label = "[On Course] =>"
+        padding = " " * (len(label) + 1)
+        for course in courses:
+            if course == current:
+                click.echo(f"{click.style(label, fg="green")} {course}")
+                continue
+
+            click.echo(f"{padding}{course}")
+
+    else:
+        try:
+            Courses.create_course(branch_name)
+            Messages.echo_success(f"course {branch_name} set at warp speed!")
+        except Exception as e:
+            Messages.echo_error(str(e))

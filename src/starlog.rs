@@ -49,6 +49,6 @@ impl Starlog {
     #[staticmethod]
     fn get_latest_starlog_hash() -> PyResult<String> {
         Starlog::get_latest_starlog_hash_internal()
-            .map_err(|msg| pyo3::exceptions::PyRuntimeError::new_err(msg))
+            .map_err(pyo3::exceptions::PyRuntimeError::new_err)
     }
 }

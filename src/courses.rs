@@ -1,5 +1,7 @@
+use crate::spacedock::HELM_DIR;
+use crate::starlog::Starlog;
 use pyo3::prelude::*;
-use std::fs;
+use std::{fs, path::PathBuf};
 use walkdir::WalkDir;
 
 #[pyclass]
@@ -43,5 +45,17 @@ impl Courses {
         let courses = Courses::list_all(helm_path);
         let current = Courses::current(current_course_path);
         Ok((courses, current))
+    }
+
+    #[staticmethod]
+    pub fn create_course(name: &str) -> PyResult<()> {
+        let course_path = PathBuf::from(HELM_DIR).join(name);
+        match Starlog::get_latest_starlog_hash_internal() {
+            Ok(latest_starlog_hash) => {
+                fs::write(course_path, latest_starlog_hash)?;
+                Ok(())
+            }
+            Err(msg) => Err(pyo3::exceptions::PyRuntimeError::new_err(msg)),
+        }
     }
 }
