@@ -14,6 +14,8 @@ Possible usage:
 - `ruxpy course [-s | --set] <course-name>` - Create a new course
 - `ruxpy course [-d | --delete] <course-name>` - delete a course 
 
+> Note - As a design decision, the `core` course will be indestructible or default course. Also, since `core` can't be deleted, you need to be checked out on `core` to delete the last remaining course(other than `core` ofcourse).
+
 ### 2. Switching Courses
 Course switching will be provided using seperate command for better UX. The command will be:\
 `ruxpy warp <course-name>`
