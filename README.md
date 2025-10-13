@@ -16,7 +16,11 @@
 - Staging and commit logic
 - Star Trek-inspired naming and UX
 
-## Installation
+## Installation and Usage
+Pre-built wheel files for Windows, macOS, and Linux are available on the [GitHub Releases](https://github.com/tanmayc07/ruxpy/releases) page.
+For detailed installation steps and a list of available commands, see the [USAGE.md](./USAGE.md) documentation.
+
+## Development
 
 ```bash
 # Clone the repo
