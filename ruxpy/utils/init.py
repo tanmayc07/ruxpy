@@ -1,5 +1,5 @@
 import os
-from ..ruxpy import find_dock_root
+from ..ruxpy import find_dock_root, Spacedock
 
 required_items = {
     "repo": "dir",
@@ -19,16 +19,18 @@ def get_paths(base_path=None):
         if base_path is None:
             raise Exception("No spacedock found!")
 
-    paths = {}
-    paths["repo"] = base_path
-    paths["dock"] = os.path.join(base_path, ".dock")
-    paths["stage"] = os.path.join(paths["dock"], "stage")
-    paths["helm"] = os.path.join(paths["dock"], "HELM")
-    paths["links"] = os.path.join(paths["dock"], "links")
-    paths["core"] = os.path.join(paths["links"], "helm", "core")
-    paths["config"] = os.path.join(paths["dock"], "config.toml")
-    paths["objects"] = os.path.join(paths["dock"], "objects")
+    # paths = {}
+    # paths["repo"] = base_path
+    # paths["dock"] = os.path.join(base_path, ".dock")
+    # paths["stage"] = os.path.join(paths["dock"], "stage")
+    # paths["helm"] = os.path.join(paths["dock"], "HELM")
+    # paths["links"] = os.path.join(paths["dock"], "links")
+    # paths["core"] = os.path.join(paths["links"], "helm", "core")
+    # paths["config"] = os.path.join(paths["dock"], "config.toml")
+    # paths["objects"] = os.path.join(paths["dock"], "objects")
 
+    paths = Spacedock.get_paths_dict(str(base_path))
+    paths["repo"] = base_path if base_path != "." else os.getcwd()
     return paths
 
 
@@ -38,8 +40,8 @@ def find_dock_root_py(start_path="."):
 
 
 def get_missing_spacedock_items(paths):
-    dir_keys = ["repo", "dock", "links", "objects"]
-    file_keys = ["stage", "helm", "core", "config"]
+    dir_keys = ["repo", "dock", "links", "objects", "helm_d"]
+    file_keys = ["stage", "helm_f", "core", "config"]
     required_keys = dir_keys + file_keys
 
     missing = []

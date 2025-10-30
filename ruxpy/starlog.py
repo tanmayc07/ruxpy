@@ -32,7 +32,7 @@ def starlog(create, message, list):
     is_proper = check_spacedock(paths)
     if not is_proper:
         Messages.echo_error(
-            "The spacedock is not initialized. " "Please run 'ruxpy start'"
+            "The spacedock is not initialized. Please run 'ruxpy start'"
         )
         return
 
@@ -60,7 +60,7 @@ def starlog(create, message, list):
 
         for starlog_obj in starlogs_obj_list:
             click.echo(
-                f"Hash: {starlog_obj["hash"]}\n"
+                f"Hash: {starlog_obj['hash']}\n"
                 f"Author: {starlog_obj.get('author')}\n"
                 f"Email: {starlog_obj.get('email')}\n"
                 f"Message: {starlog_obj.get('message')}\n"
@@ -129,7 +129,7 @@ Files yet to be beamed:
                     json.dump([], f)
                 return
 
-            helm_path = paths["helm"]
+            helm_path = paths["helm_f"]
             course_path = ""
             try:
                 with open(helm_path, "r") as f:
@@ -144,19 +144,16 @@ Files yet to be beamed:
                             parent = None  # Initial starlog
                     else:
                         click.echo(
-                            "The spacedock is not initialized. "
-                            "Please run 'ruxpy start'"
+                            "The spacedock is not initialized. Please run 'ruxpy start'"
                         )
                         return
                 else:
                     click.echo(
-                        "The spacedock is not initialized. " "Please run 'ruxpy start'"
+                        "The spacedock is not initialized. Please run 'ruxpy start'"
                     )
                     return
             except FileNotFoundError:
-                click.echo(
-                    "The spacedock is not initialized. " "Please run 'ruxpy start'"
-                )
+                click.echo("The spacedock is not initialized. Please run 'ruxpy start'")
                 return
 
             starlog_obj = {

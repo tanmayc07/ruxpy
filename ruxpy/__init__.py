@@ -28,6 +28,7 @@ from .ruxpy import (
     filter_ignored_files,
     Courses,
     Blob,
+    Spacedock,
 )
 
 __all__ = [
@@ -39,6 +40,7 @@ __all__ = [
     "filter_ignored_files",
     "Courses",
     "Blob",
+    "Spacedock",
     # Python utils
     "get_course_name",
     "check_spacedock",

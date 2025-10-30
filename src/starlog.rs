@@ -3,14 +3,16 @@ use std::fs;
 use std::path::PathBuf;
 use std::str;
 
-use crate::spacedock::{DOCK_DIR, HELM_FILE};
+use crate::spacedock::Spacedock;
 
 #[pyclass]
 pub struct Starlog;
 
 impl Starlog {
     pub fn get_latest_starlog_hash_internal() -> Result<String, String> {
-        let helm_file = PathBuf::from(HELM_FILE);
+        let helm_file_path = Spacedock::get_path_info_internal("helm_f")
+            .ok_or_else(|| "Cannot get helm file path".to_string())?;
+        let helm_file = PathBuf::from(helm_file_path.path);
         let helm_contents =
             fs::read_to_string(helm_file).map_err(|_| "HELM read failed".to_string())?;
         let branch_path = helm_contents.trim();
@@ -21,7 +23,12 @@ impl Starlog {
                 .nth(1)
                 .ok_or("HELM malformed")?
                 .trim();
-            let course_path = PathBuf::from(DOCK_DIR).join(course_file);
+            let course_path = PathBuf::from(
+                Spacedock::get_path_info_internal("dock")
+                    .ok_or_else(|| "Cannot get dock dir info".to_string())?
+                    .path,
+            )
+            .join(course_file);
 
             if course_path.exists() && course_path.is_file() {
                 let hash_contents = fs::read_to_string(course_path)
