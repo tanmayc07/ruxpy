@@ -12,7 +12,7 @@ use ignore::gitignore::{Gitignore, GitignoreBuilder};
 use pyo3::prelude::*;
 use sha3::{Digest, Sha3_256};
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use walkdir::WalkDir;
 
 #[pyfunction]
@@ -39,25 +39,6 @@ fn save_starlog(repo_path: &str, starlog_bytes: Vec<u8>) -> PyResult<String> {
     fs::write(starlog_path, &starlog_bytes)?;
 
     Ok(hash)
-}
-
-#[pyfunction]
-fn find_dock_root(start_path: Option<String>) -> PyResult<Option<String>> {
-    let mut current = match start_path {
-        Some(path) => PathBuf::from(path),
-        None => std::env::current_dir().unwrap(),
-    };
-
-    loop {
-        if current.join(".dock").exists() {
-            return Ok(Some(current.to_string_lossy().to_string()));
-        }
-
-        if !current.pop() {
-            break;
-        }
-    }
-    Ok(None)
 }
 
 #[pyfunction]
@@ -141,7 +122,6 @@ fn filter_ignored_files(files: Vec<String>) -> PyResult<Vec<String>> {
 fn ruxpy(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(init_object_dir, m)?)?;
     m.add_function(wrap_pyfunction!(save_starlog, m)?)?;
-    m.add_function(wrap_pyfunction!(find_dock_root, m)?)?;
     m.add_function(wrap_pyfunction!(list_all_files, m)?)?;
     m.add_function(wrap_pyfunction!(filter_ignored_files, m)?)?;
     m.add_class::<Spacedock>()?;

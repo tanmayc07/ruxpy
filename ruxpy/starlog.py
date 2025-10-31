@@ -9,10 +9,9 @@ from ruxpy import ruxpy
 from ruxpy import (
     Messages,
     Starlog,
+    Spacedock,
     safe_load_staged_files,
-    find_dock_root_py,
     get_paths,
-    check_spacedock,
     list_unstaged_files,
     list_repo_files,
 )
@@ -26,10 +25,10 @@ from ruxpy import (
 @click.option("-l", "--list", is_flag=True, help="List all starlog entries (commits)")
 def starlog(create, message, list):
     # Find the root and check integrity
-    base_path = find_dock_root_py()
+    base_path = Spacedock.find_dock_root(None)
     paths = get_paths(base_path)
 
-    is_proper = check_spacedock(paths)
+    is_proper = Spacedock.check_spacedock(str(paths["repo"]))
     if not is_proper:
         Messages.echo_error(
             "The spacedock is not initialized. Please run 'ruxpy start'"

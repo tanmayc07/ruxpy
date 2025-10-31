@@ -4,9 +4,9 @@ import json
 import hashlib
 from ruxpy import (
     Messages,
+    Spacedock,
     safe_load_staged_files,
     get_paths,
-    check_spacedock,
 )
 from ruxpy import filter_ignored_files
 
@@ -26,7 +26,7 @@ def beam(files):
         return
 
     # Check if spacedock is initialized
-    is_proper = check_spacedock(paths)
+    is_proper = Spacedock.check_spacedock(str(paths["repo"]))
     if not is_proper:
         Messages.echo_error(
             "The spacedock is not initialized. Please run 'ruxpy start'"

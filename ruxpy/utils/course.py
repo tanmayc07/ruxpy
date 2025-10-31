@@ -1,8 +1,8 @@
 import os
 import json
-from .init import find_dock_root_py, get_paths
+from .init import get_paths
 from .starlog import Starlog
-from ..ruxpy import list_all_files
+from ..ruxpy import list_all_files, Spacedock
 
 
 def get_course_name(path):
@@ -35,7 +35,7 @@ def check_stage_path_exists(stage_path):
 
 
 def list_unstaged_files(repo_path: str):
-    repo_path = find_dock_root_py(repo_path)
+    repo_path = Spacedock.find_dock_root(str(repo_path))
     paths = get_paths(repo_path)
 
     latest_starlog_hash = Starlog.get_latest_starlog_hash(paths)

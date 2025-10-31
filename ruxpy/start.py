@@ -2,11 +2,7 @@ import os
 import click
 from ruxpy import Spacedock, ruxpy
 from ruxpy import (
-    # required_items,
-    find_dock_root_py,
     get_paths,
-    check_spacedock,
-    get_missing_spacedock_items,
 )
 
 
@@ -16,7 +12,7 @@ def start(path):
     """Start a new ruxpy repository"""
 
     # Check for spacedock
-    dock_root = find_dock_root_py(path)
+    dock_root = Spacedock.find_dock_root(str(path))
 
     if dock_root is None:
         # Create new spacedock
@@ -59,7 +55,7 @@ def start(path):
     else:
         # Check if .dock/ has proper structure
         paths = get_paths(dock_root)
-        is_proper = check_spacedock(paths)
+        is_proper = Spacedock.check_spacedock(str(paths["repo"]))
 
         if is_proper:
             # Everything checks out, return early
@@ -67,7 +63,9 @@ def start(path):
             return
         else:
             # Initialize new spacedock
-            missing_paths = get_missing_spacedock_items(paths)
+            missing_paths = Spacedock.get_missing_spacedock_items_core(
+                str(paths["repo"])
+            )
             for path in missing_paths:
                 if Spacedock.get_path_kind(path) == "Dir":
                     if path == "links":

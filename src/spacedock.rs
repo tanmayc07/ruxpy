@@ -125,4 +125,60 @@ impl Spacedock {
 
         Ok(dict.into())
     }
+
+    #[staticmethod]
+    pub fn get_missing_spacedock_items_core(base_path: &str) -> Vec<&'static str> {
+        let mut missing = Vec::new();
+
+        for info in PATHS.iter() {
+            let full_path = Path::new(base_path).join(info.path);
+
+            if !full_path.exists() {
+                missing.push(info.key);
+                continue;
+            }
+
+            match info.kind {
+                PathKind::Dir if !full_path.is_dir() => missing.push(info.key),
+                PathKind::File if !full_path.is_file() => missing.push(info.key),
+                _ => {}
+            }
+        }
+
+        missing
+    }
+
+    #[staticmethod]
+    fn find_dock_root(start_path: Option<String>) -> Option<String> {
+        let mut current = match start_path {
+            Some(path) => std::path::PathBuf::from(path),
+            None => std::env::current_dir().unwrap(),
+        };
+
+        loop {
+            if current.join(".dock").exists() {
+                return Some(current.to_string_lossy().to_string());
+            }
+
+            if !current.pop() {
+                break;
+            }
+        }
+        None
+    }
+
+    #[staticmethod]
+    pub fn check_spacedock(path: Option<String>) -> bool {
+        let mut base_path = path;
+
+        if base_path.is_none() {
+            base_path = Spacedock::find_dock_root(Some(".".to_string()));
+            if base_path.is_none() {
+                panic!("No spacedock found!");
+            }
+        }
+        let base_path_str = base_path.as_ref().unwrap();
+        let missing = Spacedock::get_missing_spacedock_items_core(base_path_str);
+        missing.is_empty()
+    }
 }

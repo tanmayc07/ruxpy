@@ -11,11 +11,7 @@ from ruxpy.utils.course import (
     list_unstaged_files,
 )
 from ruxpy.utils.init import (
-    required_items,
     get_paths,
-    find_dock_root_py,
-    get_missing_spacedock_items,
-    check_spacedock,
 )
 from ruxpy.utils.starlog import Starlog
 
@@ -23,7 +19,6 @@ from ruxpy.utils.starlog import Starlog
 from .ruxpy import (
     init_object_dir,
     save_starlog,
-    find_dock_root,
     list_all_files,
     filter_ignored_files,
     Courses,
@@ -43,16 +38,12 @@ __all__ = [
     "Spacedock",
     # Python utils
     "get_course_name",
-    "check_spacedock",
     "list_repo_files",
     "load_staged_files",
     "safe_load_staged_files",
     "check_stage_path_exists",
     "list_unstaged_files",
-    "required_items",
     "get_paths",
-    "find_dock_root_py",
-    "get_missing_spacedock_items",
     "Messages",
     "Config",
     "Starlog",
