@@ -13,7 +13,6 @@ from ruxpy.utils.course import (
 from ruxpy.utils.init import (
     get_paths,
 )
-from ruxpy.utils.starlog import Starlog
 
 # Import Rust extension and expose its functions
 from .ruxpy import (
@@ -24,6 +23,7 @@ from .ruxpy import (
     Courses,
     Blob,
     Spacedock,
+    Starlog,
 )
 
 __all__ = [
@@ -36,6 +36,7 @@ __all__ = [
     "Courses",
     "Blob",
     "Spacedock",
+    "Starlog",
     # Python utils
     "get_course_name",
     "list_repo_files",
@@ -46,5 +47,4 @@ __all__ = [
     "get_paths",
     "Messages",
     "Config",
-    "Starlog",
 ]

@@ -1,8 +1,9 @@
 import os
 import json
 from .init import get_paths
-from .starlog import Starlog
-from ..ruxpy import list_all_files, Spacedock
+
+# from .starlog import Starlog
+from ..ruxpy import list_all_files, Spacedock, Starlog
 
 
 def get_course_name(path):
@@ -38,10 +39,11 @@ def list_unstaged_files(repo_path: str):
     repo_path = Spacedock.find_dock_root(str(repo_path))
     paths = get_paths(repo_path)
 
-    latest_starlog_hash = Starlog.get_latest_starlog_hash(paths)
-
     try:
-        committed_files = Starlog.load_starlog_files(paths, latest_starlog_hash)
+        latest_starlog_hash = Starlog.get_latest_starlog_hash()
+        committed_files = Starlog.load_starlog_files_py(
+            paths["repo"], latest_starlog_hash
+        )
     except Exception:
         committed_files = []
 

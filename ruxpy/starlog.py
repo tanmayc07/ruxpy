@@ -166,9 +166,9 @@ Files yet to be beamed:
 
             if starlog_obj["parent"] is not None:
                 try:
-                    parent_files = Starlog.load_starlog_files(paths, parent)
-                except Exception:
-                    Messages.echo_error("Opening parent starlog failed!")
+                    parent_files = Starlog.load_starlog_files_py(paths["repo"], parent)
+                except Exception as e:
+                    Messages.echo_error(f"Opening parent starlog failed! {e}")
                     return
 
                 all_files = list_repo_files(paths["repo"])
