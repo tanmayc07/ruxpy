@@ -1,12 +1,8 @@
 import os
 import click
-from ruxpy import ruxpy
+from ruxpy import Spacedock, ruxpy
 from ruxpy import (
-    required_items,
-    find_dock_root_py,
     get_paths,
-    check_spacedock,
-    get_missing_spacedock_items,
 )
 
 
@@ -16,7 +12,7 @@ def start(path):
     """Start a new ruxpy repository"""
 
     # Check for spacedock
-    dock_root = find_dock_root_py(path)
+    dock_root = Spacedock.find_dock_root(str(path))
 
     if dock_root is None:
         # Create new spacedock
@@ -35,7 +31,7 @@ def start(path):
             f.write("# config.toml\n")
 
         # Create HELM pointer file
-        helm_path = paths["helm"]
+        helm_path = paths["helm_f"]
         with open(helm_path, "w") as f:
             f.write("link: links/helm/core\n")
 
@@ -55,21 +51,23 @@ def start(path):
         starlog_path = os.path.join(dock_path, "starlogs")
         os.makedirs(starlog_path, exist_ok=True)
 
-        click.echo(f"Initialized ruxpy repository in {paths["repo"]}...")
+        click.echo(f"Initialized ruxpy repository in {paths['repo']}...")
     else:
         # Check if .dock/ has proper structure
         paths = get_paths(dock_root)
-        is_proper = check_spacedock(paths)
+        is_proper = Spacedock.check_spacedock(str(paths["repo"]))
 
         if is_proper:
             # Everything checks out, return early
-            click.echo(f"Reinitialized ruxpy repository in {paths["repo"]}...")
+            click.echo(f"Reinitialized ruxpy repository in {paths['repo']}...")
             return
         else:
             # Initialize new spacedock
-            missing_paths = get_missing_spacedock_items(paths)
+            missing_paths = Spacedock.get_missing_spacedock_items_core(
+                str(paths["repo"])
+            )
             for path in missing_paths:
-                if required_items[path] == "dir":
+                if Spacedock.get_path_kind(path) == "Dir":
                     if path == "links":
                         links_path = paths["links"]
                         os.makedirs(os.path.join(links_path, "helm"), exist_ok=True)
@@ -81,13 +79,13 @@ def start(path):
                         dock_path = paths["dock"]
                         os.makedirs(dock_path, exist_ok=True)
 
-                if required_items[path] == "file":
+                if Spacedock.get_path_kind(path) == "File":
                     if path == "stage":
                         with open(paths["stage"], "w") as f:
                             f.write("[]")
 
-                    if path == "helm":
-                        with open(paths["helm"], "w") as f:
+                    if path == "helm_f":
+                        with open(paths["helm_f"], "w") as f:
                             f.write("link: links/helm/core\n")
 
                     if path == "core":
@@ -98,4 +96,4 @@ def start(path):
                         with open(paths["config"], "w") as f:
                             f.write("# config.toml\n")
 
-            click.echo(f"Initialized ruxpy repository in {paths["repo"]}...")
+            click.echo(f"Initialized ruxpy repository in {paths['repo']}...")

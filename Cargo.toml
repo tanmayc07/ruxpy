@@ -11,6 +11,8 @@ crate-type = ["cdylib"]
 [dependencies]
 ignore = "0.4.23"
 pyo3 = "0.25.0"
+serde = "1.0.228"
+serde_json = "1.0.145"
 sha3 = "0.10.8"
 tempfile = "3.23.0"
 walkdir = "2.5.0"

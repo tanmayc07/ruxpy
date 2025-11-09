@@ -7,11 +7,10 @@ from ruxpy import (
     check_stage_path_exists,
     load_staged_files,
     Messages,
+    Spacedock,
     list_repo_files,
-    find_dock_root_py,
     list_unstaged_files,
     get_paths,
-    check_spacedock,
 )
 
 
@@ -20,29 +19,27 @@ def scan():
     """Show the repository status"""
 
     # check for spacedock
-    dock_root = find_dock_root_py()
+    dock_root = Spacedock.find_dock_root(None)
     if dock_root is None:  # Not a ruxpy repository
         Messages.echo_error(
-            "The spacedock is not initialized. " "Please run 'ruxpy start'"
+            "The spacedock is not initialized. Please run 'ruxpy start'"
         )
         return
     else:
         paths = get_paths(dock_root)
-        is_proper = check_spacedock(paths)
+        is_proper = Spacedock.check_spacedock(str(paths["repo"]))
         if not is_proper:
-            Messages.echo_error(
-                "The spacedock is corrupted. " "Please run 'ruxpy start'"
-            )
+            Messages.echo_error("The spacedock is corrupted. Please run 'ruxpy start'")
             return
 
     # Scan the spacedock
-    course_name = get_course_name(paths["helm"])
+    course_name = get_course_name(paths["helm_f"])
     click.echo(f"On course '-{course_name}-'")
 
     # Read staging area
     stage_path = paths["stage"]
     if not check_stage_path_exists(stage_path):
-        Messages.echo_error("The spacedock is corrupted. " "Please run 'ruxpy start'")
+        Messages.echo_error("The spacedock is corrupted. Please run 'ruxpy start'")
         return
 
     try:
@@ -69,14 +66,14 @@ def scan():
             click.echo()
             click.echo("Ready to record into starlog:")
             for file in staged_files:
-                click.echo(f"\t{click.style(f'beamed:\t{file}', fg="green")}")
+                click.echo(f"\t{click.style(f'beamed:\t{file}', fg='green')}")
 
         if len(unstaged_files) > 0:
             click.echo()
             click.echo("Changes that are untracked:")
             click.echo(" (use `ruxpy beam <file>... to update`)")
             for file in unstaged_files:
-                click.echo(f"\t{click.style(file, fg="red")}")
+                click.echo(f"\t{click.style(file, fg='red')}")
 
         return
 
@@ -113,22 +110,22 @@ def scan():
 
     click.echo("Ready to record into starlog:")
     for file in staged_files:
-        click.echo(f"\t{click.style(f'beamed:\t{file}', fg="green")}")
+        click.echo(f"\t{click.style(f'beamed:\t{file}', fg='green')}")
     click.echo()
 
     click.echo("Changes that can be beamed:")
     click.echo("  (use `ruxpy beam <file>...` to update)")
     for file in modified:
-        click.echo(f"\t{click.style(f'modified:\t{file}', fg="red")}")
+        click.echo(f"\t{click.style(f'modified:\t{file}', fg='red')}")
 
     for file in deleted:
-        click.echo(f"\t{click.style(f'deleted:\t{file}', fg="red")}")
+        click.echo(f"\t{click.style(f'deleted:\t{file}', fg='red')}")
     click.echo()
 
     click.echo("Changes that are untracked:")
     click.echo(" (use `ruxpy beam <file>... to update`)")
     for file in untracked:
-        click.echo(f"\t{click.style(file, fg="red")}")
+        click.echo(f"\t{click.style(file, fg='red')}")
     click.echo()
 
     click.echo(

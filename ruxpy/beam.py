@@ -4,9 +4,9 @@ import json
 import hashlib
 from ruxpy import (
     Messages,
+    Spacedock,
     safe_load_staged_files,
     get_paths,
-    check_spacedock,
 )
 from ruxpy import filter_ignored_files
 
@@ -21,15 +21,15 @@ def beam(files):
         paths = get_paths()
     except Exception:
         Messages.echo_error(
-            "The spacedock is not initialized. " "Please run 'ruxpy start'"
+            "The spacedock is not initialized. Please run 'ruxpy start'"
         )
         return
 
     # Check if spacedock is initialized
-    is_proper = check_spacedock(paths)
+    is_proper = Spacedock.check_spacedock(str(paths["repo"]))
     if not is_proper:
         Messages.echo_error(
-            "The spacedock is not initialized. " "Please run 'ruxpy start'"
+            "The spacedock is not initialized. Please run 'ruxpy start'"
         )
         return
 
@@ -47,7 +47,7 @@ def beam(files):
         return
 
     # Load the latest starlog
-    with open(paths["helm"], "r") as f:
+    with open(paths["helm_f"], "r") as f:
         content = f.read().strip()
 
     course_name = content.split(":")[-1].strip().split("/")[-1]
@@ -106,10 +106,12 @@ def beam(files):
                 # File is already committed and unchanged, skip staging
                 click.echo(
                     f"{file}\t\t[{percent_done}%] "
-                    f"{click.style(
-                        '[skipped: unchanged and present in latest starlog]',
-                        fg='yellow'
-                    )}"
+                    f"{
+                        click.style(
+                            '[skipped: unchanged and present in latest starlog]',
+                            fg='yellow',
+                        )
+                    }"
                 )
                 continue
 

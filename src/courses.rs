@@ -1,4 +1,4 @@
-use crate::spacedock::{HELM_DIR, HELM_FILE};
+use crate::spacedock::Spacedock;
 use crate::starlog::Starlog;
 use pyo3::prelude::*;
 use std::{fs, path::PathBuf};
@@ -55,36 +55,55 @@ impl Courses {
 
     #[staticmethod]
     pub fn create_course(name: &str) -> PyResult<()> {
-        let course_path = PathBuf::from(HELM_DIR).join(name);
-        match Starlog::get_latest_starlog_hash_internal() {
-            Ok(latest_starlog_hash) => {
-                fs::write(course_path, latest_starlog_hash)?;
-                Ok(())
+        if let Some(course_dir) = Spacedock::get_path_info_internal("helm_d") {
+            let course_path = PathBuf::from(course_dir.path).join(name);
+            match Starlog::get_latest_starlog_hash_internal() {
+                Ok(latest_starlog_hash) => {
+                    fs::write(course_path, latest_starlog_hash)?;
+                    Ok(())
+                }
+                Err(msg) => Err(pyo3::exceptions::PyRuntimeError::new_err(msg)),
             }
-            Err(msg) => Err(pyo3::exceptions::PyRuntimeError::new_err(msg)),
+        } else {
+            Err(pyo3::exceptions::PyRuntimeError::new_err(
+                "Couldn't get course path",
+            ))
         }
     }
 
     #[staticmethod]
     pub fn delete_course(name: &str) -> PyResult<()> {
-        let current_course = Courses::current_internal(HELM_FILE);
-        if current_course == name {
-            return Err(pyo3::exceptions::PyRuntimeError::new_err(
-                "Warp to a different course first",
-            ));
-        }
-        if name == "core" {
-            return Err(pyo3::exceptions::PyRuntimeError::new_err(
-                "Cannot delete course core",
-            ));
-        }
-        // delete name course
-        match fs::remove_file(PathBuf::from(HELM_DIR).join(name)) {
-            Ok(()) => Ok(()),
-            Err(msg) => Err(pyo3::exceptions::PyRuntimeError::new_err(format!(
-                "{:?}",
-                msg
-            ))),
+        if let Some(helm_path) = Spacedock::get_path_info_internal("helm_f") {
+            let current_course = Courses::current_internal(helm_path.path);
+            if current_course == name {
+                return Err(pyo3::exceptions::PyRuntimeError::new_err(
+                    "Warp to a different course first",
+                ));
+            }
+            if name == "core" {
+                return Err(pyo3::exceptions::PyRuntimeError::new_err(
+                    "Cannot delete course core",
+                ));
+            }
+            // delete name course
+            if let Some(course_dir) = Spacedock::get_path_info_internal("helm_d") {
+                let course_path = PathBuf::from(course_dir.path).join(name);
+                match fs::remove_file(course_path) {
+                    Ok(()) => Ok(()),
+                    Err(msg) => Err(pyo3::exceptions::PyRuntimeError::new_err(format!(
+                        "{:?}",
+                        msg
+                    ))),
+                }
+            } else {
+                Err(pyo3::exceptions::PyRuntimeError::new_err(
+                    "Cannot get course directory path",
+                ))
+            }
+        } else {
+            Err(pyo3::exceptions::PyRuntimeError::new_err(
+                "Cannot get course file path",
+            ))
         }
     }
 }
