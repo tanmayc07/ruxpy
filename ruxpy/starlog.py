@@ -10,6 +10,7 @@ from ruxpy import (
     Messages,
     Starlog,
     Spacedock,
+    RuxpyTree,
     safe_load_staged_files,
     get_paths,
     list_unstaged_files,
@@ -65,6 +66,7 @@ def starlog(create, message, list):
                 f"Message: {starlog_obj.get('message')}\n"
                 f"Timestamp: {starlog_obj.get('timestamp')}\n"
                 f"Parent: {starlog_obj.get('parent')}\n"
+                f"Tree: {starlog_obj.get('tree')}\n"
                 "-------------------------------------------------------------------"
             )
 
@@ -155,6 +157,15 @@ Files yet to be beamed:
                 click.echo("The spacedock is not initialized. Please run 'ruxpy start'")
                 return
 
+            try:
+                tree_json = RuxpyTree.build_tree_from_staged(
+                    staged_hash_list, str(paths["repo"])
+                )
+                tree_hash = RuxpyTree.write_tree_object(tree_json, str(paths["repo"]))
+            except Exception as e:
+                click.echo(e)
+                return
+
             starlog_obj = {
                 "message": message,
                 "author": author,
@@ -162,6 +173,7 @@ Files yet to be beamed:
                 "timestamp": timestamp,
                 "parent": parent,
                 "files": staged_hash_list,
+                "tree": tree_hash,
             }
 
             if starlog_obj["parent"] is not None:
