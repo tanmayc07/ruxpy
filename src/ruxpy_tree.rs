@@ -2,9 +2,12 @@ use pyo3::types::PyDict;
 use pyo3::{exceptions::PyRuntimeError, prelude::*};
 use serde_json::{Map, Value};
 use sha3::{Digest, Sha3_256};
+use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
 use walkdir::WalkDir;
+
+use crate::starlog::Starlog;
 
 #[pyclass]
 pub struct RuxpyTree;
@@ -15,10 +18,6 @@ fn hash_bytes(data: &[u8]) -> String {
     let hash = format!("{:x}", h.finalize());
     hash
 }
-
-// fn repo_join(repo: &Path, parts: &str) -> PathBuf {
-//     repo.join(parts)
-// }
 
 #[pymethods]
 impl RuxpyTree {
@@ -70,8 +69,13 @@ impl RuxpyTree {
             .map_err(|e| PyRuntimeError::new_err(format!("Failed to serialize tree: {}", e)))
     }
 
+    /// Returns tree JSON mapping but only for files that are staged
     #[staticmethod]
-    pub fn build_tree_from_staged(staged_files: PyObject, repo_path: &str) -> PyResult<String> {
+    pub fn build_tree_from_staged(
+        staged_files: PyObject,
+        starlog_hash: Option<String>,
+        repo_path: &str,
+    ) -> PyResult<String> {
         let repo = Path::new(repo_path);
         if !repo.exists() || !repo.is_dir() {
             return Err(PyRuntimeError::new_err(
@@ -82,9 +86,29 @@ impl RuxpyTree {
         Python::with_gil(|py| {
             let mut tree = Map::new();
 
-            let dict = staged_files.downcast_bound::<PyDict>(py)?;
+            let staged = staged_files.downcast_bound::<PyDict>(py)?;
 
-            for (key, value) in dict.iter() {
+            // insert latest starlog's files first
+            if let Some(hash) = starlog_hash {
+                let parent_starlog_obj =
+                    Starlog::load_starlog_object(&hash).map_err(PyRuntimeError::new_err)?;
+
+                let parent_hash = parent_starlog_obj
+                    .as_object()
+                    .and_then(|obj| obj.get("parent"))
+                    .and_then(|v| v.as_str());
+
+                let parent_files = Starlog::load_parent_starlog_files(parent_hash)
+                    .map_err(PyRuntimeError::new_err)?;
+
+                if let Some(file_map) = parent_files.as_object() {
+                    for (key, value) in file_map.iter() {
+                        tree.insert(key.to_owned(), Value::String(value.to_string()));
+                    }
+                }
+            }
+
+            for (key, value) in staged.iter() {
                 let file: String = key.extract()?;
                 let blob: String = value.extract()?;
                 tree.insert(file, Value::String(blob));
@@ -93,6 +117,24 @@ impl RuxpyTree {
             serde_json::to_string(&Value::Object(tree))
                 .map_err(|e| PyRuntimeError::new_err(format!("Failed to serialize tree: {}", e)))
         })
+    }
+
+    /// Load a tree object by hash from the object store and return its JSON string.
+    #[staticmethod]
+    pub fn load_tree(tree_hash: &str, repo_path: &str) -> PyResult<String> {
+        if tree_hash.len() < 3 {
+            return Err(PyRuntimeError::new_err("Invalid tree hash"));
+        }
+
+        let repo = Path::new(repo_path);
+        let objects_dir = repo.join(".dock").join("objects");
+        let (prefix, rest) = tree_hash.split_at(2);
+        let object_path = objects_dir.join(prefix).join(rest);
+
+        let contents = fs::read_to_string(&object_path)
+            .map_err(|e| PyRuntimeError::new_err(format!("Failed to read tree object: {}", e)))?;
+
+        Ok(contents)
     }
 
     /// Write tree JSON (string) into the object store
@@ -127,6 +169,118 @@ impl RuxpyTree {
         }
 
         Ok(tree_hash)
+    }
+
+    /// Perform warp to course from tree perspective - create/remove files and dirs to sync the project state
+    #[staticmethod]
+    pub fn warp_to_course(tree_hash: &str, repo_path: &str) -> PyResult<()> {
+        let tree_json = RuxpyTree::load_tree(tree_hash, repo_path)?;
+        let parsed: Value = serde_json::from_str(&tree_json)
+            .map_err(|e| PyRuntimeError::new_err(format!("Failed to parse tree JSON: {}", e)))?;
+
+        let repo = Path::new(repo_path);
+
+        let obj = parsed
+            .as_object()
+            .ok_or_else(|| PyRuntimeError::new_err("Tree JSON is not an object"))?;
+
+        let mut tree_paths: HashSet<String> = HashSet::new();
+        for (rel_path, v) in obj.iter() {
+            if v.is_string() {
+                let normalized = rel_path.replace(std::path::MAIN_SEPARATOR, "/");
+                tree_paths.insert(normalized);
+            }
+        }
+
+        // remove files in working dir that are NOT present in tree
+        for entry in WalkDir::new(repo).into_iter().filter_map(|e| e.ok()) {
+            let p = entry.path();
+            if p.is_file() {
+                // todo: extend to also check .gitignore paths
+                if p.starts_with(repo.join(".dock")) {
+                    continue;
+                }
+
+                let rel = match p.strip_prefix(repo) {
+                    Ok(r) => r,
+                    Err(_) => continue,
+                };
+                let rel_str = rel
+                    .to_string_lossy()
+                    .replace(std::path::MAIN_SEPARATOR, "/");
+                if !tree_paths.contains(&rel_str) {
+                    fs::remove_file(p).map_err(|e| {
+                        PyRuntimeError::new_err(format!(
+                            "Failed to remove file {}: {}",
+                            p.display(),
+                            e
+                        ))
+                    })?;
+                }
+            }
+        }
+
+        // Remove empty directories
+        let mut dirs: Vec<std::path::PathBuf> = WalkDir::new(repo)
+            .into_iter()
+            .filter_map(|e| e.ok())
+            .filter(|e| e.file_type().is_dir())
+            .map(|e| e.into_path())
+            .collect();
+        dirs.sort_by_key(|p| std::cmp::Reverse(p.components().count()));
+        for dir in dirs {
+            if dir == repo.join(".dock") || dir.starts_with(repo.join(".dock")) {
+                continue;
+            }
+            if dir == repo {
+                continue;
+            }
+            if let Ok(mut rd) = fs::read_dir(&dir) {
+                if rd.next().is_none() {
+                    let _ = fs::remove_dir(&dir);
+                }
+            }
+        }
+
+        // create files from tree
+        for (rel_path, v) in obj.iter() {
+            if let Some(blob_hash) = v.as_str() {
+                let prefix = &blob_hash[..2];
+                let rest = &blob_hash[2..];
+                let blob_path = repo.join(".dock").join("objects").join(prefix).join(rest);
+
+                if !blob_path.exists() {
+                    return Err(PyRuntimeError::new_err(format!(
+                        "Blob {} missing in object store",
+                        blob_hash
+                    )));
+                }
+
+                let dest = repo.join(rel_path);
+                if let Some(parent) = dest.parent() {
+                    if let Err(e) = fs::create_dir_all(parent) {
+                        return Err(PyRuntimeError::new_err(format!(
+                            "Failed to create parent dir {}: {}",
+                            parent.display(),
+                            e
+                        )));
+                    }
+                }
+
+                let data = fs::read(&blob_path).map_err(|e| {
+                    PyRuntimeError::new_err(format!("Failed to read blob {}: {}", blob_hash, e))
+                })?;
+                fs::write(&dest, &data).map_err(|e| {
+                    PyRuntimeError::new_err(format!(
+                        "Failed to write file {}: {}",
+                        dest.display(),
+                        e
+                    ))
+                })?;
+            }
+        }
+
+        Ok(())
     }
 }
 
@@ -189,7 +343,8 @@ mod tests {
             let staged_obj: Py<PyAny> = staged_files.into();
 
             let tree_json =
-                RuxpyTree::build_tree_from_staged(staged_obj, repo_path.to_str().unwrap()).unwrap();
+                RuxpyTree::build_tree_from_staged(staged_obj, None, repo_path.to_str().unwrap())
+                    .unwrap();
 
             let parsed: serde_json::Value = serde_json::from_str(&tree_json).unwrap();
             let obj = parsed.as_object().unwrap();
