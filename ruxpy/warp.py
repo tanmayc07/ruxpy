@@ -8,6 +8,7 @@ from ruxpy import (
     Courses,
     Starlog,
     safe_load_staged_files,
+    list_unstaged_files,
 )
 
 
@@ -33,20 +34,22 @@ def warp(course):
         )
         return
 
-    # todo:
-    #  [ ] check if there are untracked changes in which case we can warn the user
-
     try:
         course_exists = Courses.check_course_existence(str(course))
         if course_exists:
             dest_starlog_hash = Courses.get_latest_starlog_hash(str(course))
             dest_tree_hash = Starlog.get_tree_hash(dest_starlog_hash)
 
+            # Check if there are any changes or
+            # unrecorded files present to warn the user.
             staged_files = safe_load_staged_files(os.path.join(paths["dock"], "stage"))
-            if len(staged_files) > 0:
+            newly_created_files = list_unstaged_files(paths["repo"])
+
+            if len(staged_files) > 0 or len(newly_created_files) > 0:
                 Messages.echo_warning(
                     """Warping to a new course might lead to problems.\
-                    Record starlog first.
+ Beam the changes and record starlog first.
+ (Use ruxpy beam [...<files>]) to beam files)
  (Use ruxpy starlog -cm to record starlog.)
                 """
                 )
