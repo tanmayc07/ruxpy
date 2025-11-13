@@ -4,12 +4,12 @@ This document outlines planned features, enhancements, and edge cases for the ru
 
 ## Upcoming Features
 
-### 1. Tree Data Structure Implementation for Project States
+### 1. Tree Data Structure Implementation for Project States (Completed)
 - Tree data structure implementation will represent the complete file and directory state of the project at each starlog entry.
 - Each starlog entry (commit) will reference a tree object, which records the hierarchy and content hashes of all files and folders.
 - This will enable efficient diffing, course switching and merging by allowing ruxpy to reconstruct and compare project states across history.
 
-### 2. Switching Courses
+### 2. Switching Courses (Completed)
 Course switching will be provided using seperate command for better UX. The command will be:\
 `ruxpy warp <course-name>`
 

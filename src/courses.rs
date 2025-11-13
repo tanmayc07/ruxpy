@@ -1,6 +1,6 @@
 use crate::spacedock::Spacedock;
 use crate::starlog::Starlog;
-use pyo3::prelude::*;
+use pyo3::{exceptions::PyRuntimeError, prelude::*};
 use std::{fs, path::PathBuf};
 use walkdir::WalkDir;
 
@@ -51,6 +51,27 @@ impl Courses {
         let courses = Courses::list_all(helm_path);
         let current = Courses::current(current_course_path);
         Ok((courses, current))
+    }
+
+    #[staticmethod]
+    pub fn check_course_existence(course: &str) -> bool {
+        let helm_path = Spacedock::get_path_info_internal("helm_d");
+        let courses = Courses::list_all(helm_path.unwrap().path.to_string().as_str());
+
+        courses.iter().any(|key| key == course)
+    }
+
+    #[staticmethod]
+    pub fn get_latest_starlog_hash(course: &str) -> PyResult<String> {
+        let helm_path = Spacedock::get_path_info_internal("helm_d");
+        let course_path = PathBuf::from(helm_path.unwrap().path).join(course);
+        let hash = std::fs::read_to_string(course_path).map_err(|e| {
+            PyRuntimeError::new_err(format!(
+                "Failed to read the latest starlog hash of the course {}",
+                e
+            ))
+        })?;
+        Ok(hash)
     }
 
     #[staticmethod]

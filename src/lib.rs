@@ -1,10 +1,12 @@
 mod blob;
 mod courses;
+mod ruxpy_tree;
 mod spacedock;
 mod starlog;
 
 use crate::blob::Blob;
 use crate::courses::Courses;
+use crate::ruxpy_tree::RuxpyTree;
 use crate::spacedock::Spacedock;
 use crate::starlog::Starlog;
 
@@ -128,6 +130,7 @@ fn ruxpy(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Courses>()?;
     m.add_class::<Blob>()?;
     m.add_class::<Starlog>()?;
+    m.add_class::<RuxpyTree>()?;
     Ok(())
 }
 

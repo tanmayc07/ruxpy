@@ -1,7 +1,8 @@
 use pyo3::conversion::IntoPyObjectExt;
+use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
-use serde_json::Value;
+use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
 use std::str;
 use std::{collections::HashMap, fs};
@@ -84,6 +85,49 @@ impl Starlog {
             _ => Ok(HashMap::new()),
         }
     }
+
+    pub fn load_starlog_object(starlog_hash: &str) -> Result<Value, String> {
+        let starlogs_dir =
+            Spacedock::get_path_info_internal("dock").ok_or("Failed to get starlogs_dir path")?;
+
+        let (prefix, rest) = starlog_hash.split_at(2);
+        let starlog_obj_path = PathBuf::from(starlogs_dir.path)
+            .join("starlogs")
+            .join(prefix)
+            .join(rest);
+
+        let starlog_obj = std::fs::read_to_string(starlog_obj_path)
+            .map_err(|e| format!("Failed to read tree object: {}", e))?;
+
+        let parsed: Value = serde_json::from_str(&starlog_obj)
+            .map_err(|e| format!("Failed to parse tree JSON: {}", e))?;
+
+        Ok(parsed)
+    }
+
+    pub fn load_parent_starlog_files(parent_hash: Option<&str>) -> Result<Value, String> {
+        match parent_hash {
+            None => {
+                // if initial or first entry
+                Ok(json! {[]})
+            }
+
+            Some(hash) => {
+                let parent_starlog_obj = Starlog::load_starlog_object(hash)
+                    .map_err(|e| format!("Failed to load parent starlog object {}: {}", hash, e))?;
+
+                let files_array = parent_starlog_obj
+                    .as_object()
+                    .and_then(|obj| obj.get("files"))
+                    .cloned()
+                    .ok_or_else(|| {
+                        "Failed to get files key in parent starlog object".to_string()
+                    })?;
+
+                Ok(files_array)
+            }
+        }
+    }
 }
 
 #[pymethods]
@@ -110,6 +154,74 @@ impl Starlog {
             py_dict.set_item(key, py_value)?;
         }
         Ok(py_dict.into())
+    }
+
+    #[staticmethod]
+    fn get_starlog_object(py: Python<'_>, starlog_hash: &str) -> PyResult<PyObject> {
+        let parsed_value =
+            Starlog::load_starlog_object(starlog_hash).map_err(PyRuntimeError::new_err)?;
+
+        let json_string = serde_json::to_string(&parsed_value).map_err(|e| {
+            PyRuntimeError::new_err(format!("Failed to serialize JSON object: {}", e))
+        })?;
+
+        let json_module = PyModule::import(py, "json")?;
+        let py_dict = json_module.call_method1("loads", (json_string,))?;
+
+        Ok(py_dict.unbind())
+    }
+
+    #[staticmethod]
+    fn get_tree_hash(starlog_hash: &str) -> PyResult<String> {
+        let starlogs_dir = Spacedock::get_path_info_internal("dock")
+            .ok_or(PyRuntimeError::new_err("Failed to get starlogs_dir path"))?;
+
+        let starlog_path = PathBuf::from(starlogs_dir.path).join("starlogs");
+        let (prefix, rest) = starlog_hash.split_at(2);
+        let full_path = starlog_path.join(prefix).join(rest);
+
+        let starlog_obj = std::fs::read_to_string(full_path)
+            .map_err(|e| PyRuntimeError::new_err(format!("Failed to read tree object: {}", e)))?;
+
+        let parsed: Value = serde_json::from_str(&starlog_obj)
+            .map_err(|e| PyRuntimeError::new_err(format!("Failed to parse tree JSON: {}", e)))?;
+
+        let obj = parsed
+            .as_object()
+            .ok_or_else(|| PyRuntimeError::new_err("Failed to convert starlog object to object"))?;
+
+        let tree_value = obj
+            .get("tree")
+            .ok_or_else(|| PyRuntimeError::new_err("Failed to get tree key"))?;
+
+        let tree_hash = tree_value
+            .as_str()
+            .ok_or_else(|| PyRuntimeError::new_err("Failure to get the tree hash string value"))?
+            .to_owned();
+        Ok(tree_hash)
+    }
+
+    #[staticmethod]
+    fn get_parent_files(py: Python<'_>, starlog_hash: &str) -> PyResult<PyObject> {
+        let current_starlog_obj: Value =
+            Starlog::load_starlog_object(starlog_hash).map_err(PyRuntimeError::new_err)?;
+
+        let parent_hash = current_starlog_obj
+            .as_object()
+            .and_then(|obj| obj.get("parent"))
+            .and_then(|v| v.as_str());
+
+        let files_array =
+            Starlog::load_parent_starlog_files(parent_hash).map_err(PyRuntimeError::new_err)?;
+
+        let json_string = serde_json::to_string(&files_array).map_err(|e| {
+            PyRuntimeError::new_err(format!("Failed to serialize files array {}", e))
+        })?;
+
+        let json_module = pyo3::types::PyModule::import(py, "json")?;
+        let py_list = json_module.call_method1("loads", (json_string,))?;
+
+        Ok(py_list.unbind())
     }
 }
 

@@ -12,8 +12,8 @@
 ## Features
 
 - Fast object store powered by Rust
-- Modern Python CLI for repo management
-- Staging and commit logic
+- Modern Python CLI for repository management
+- Staging, commit and branching logic
 - Star Trek-inspired naming and UX
 
 ## Installation and Usage

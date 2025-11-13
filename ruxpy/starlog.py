@@ -10,6 +10,7 @@ from ruxpy import (
     Messages,
     Starlog,
     Spacedock,
+    RuxpyTree,
     safe_load_staged_files,
     get_paths,
     list_unstaged_files,
@@ -65,6 +66,7 @@ def starlog(create, message, list):
                 f"Message: {starlog_obj.get('message')}\n"
                 f"Timestamp: {starlog_obj.get('timestamp')}\n"
                 f"Parent: {starlog_obj.get('parent')}\n"
+                f"Tree: {starlog_obj.get('tree')}\n"
                 "-------------------------------------------------------------------"
             )
 
@@ -164,6 +166,8 @@ Files yet to be beamed:
                 "files": staged_hash_list,
             }
 
+            # Handles file changes in current starlog and
+            # noting the differences from parent files
             if starlog_obj["parent"] is not None:
                 try:
                     parent_files = Starlog.load_starlog_files_py(paths["repo"], parent)
@@ -191,6 +195,18 @@ Files yet to be beamed:
                         for file, fhash in current_hashes.items():
                             if fhash == pf_hash and file not in parent_files:
                                 starlog_obj["files"][file] = pf_hash
+
+            # Build tree and add it to starlog_obj
+            try:
+                tree_json = RuxpyTree.build_tree_from_staged(
+                    staged_hash_list, parent, str(paths["repo"])
+                )
+                tree_hash = RuxpyTree.write_tree_object(tree_json, str(paths["repo"]))
+            except Exception as e:
+                click.echo(e)
+                return
+
+            starlog_obj["tree"] = tree_hash
 
             serialized = json.dumps(starlog_obj, sort_keys=True)
             starlog_bytes = serialized.encode("utf-8")

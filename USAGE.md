@@ -9,6 +9,7 @@
   - [scan](#scan)
   - [config](#config)
   - [course](#course)
+  - [warp](#warp)
 - [Examples](#examples)
 
 ---
@@ -124,6 +125,16 @@ If executed with `ruxpy course`, lists all branches (courses) and highlights the
 If executed with `ruxpy course <course-name>`, creates a new course from the current starlog.
 
 > Note - As a design decision, the `core` course will be indestructible or default course. Also, since `core` can't be deleted, you need to be checked out on `core` to delete the last remaining course(other than `core` ofcourse).
+
+---
+
+#### `warp`
+
+**Usage:** `ruxpy warp <course-name>`
+
+**Description**
+
+Enables course switching with full directory and file state update based on last starlog entry
 
 ---
 

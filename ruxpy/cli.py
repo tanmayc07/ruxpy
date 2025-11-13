@@ -5,6 +5,7 @@ from .start import start
 from .scan import scan
 from .beam import beam
 from .course import course
+from .warp import warp
 
 
 @click.group()
@@ -20,6 +21,7 @@ main.add_command(start)
 main.add_command(scan)
 main.add_command(beam)
 main.add_command(course)
+main.add_command(warp)
 
 
 if __name__ == "__main__":
