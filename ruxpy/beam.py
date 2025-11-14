@@ -46,6 +46,11 @@ def beam(files):
         )
         return
 
+    for file in files_not_ignored:
+        if not os.path.exists(file):
+            Messages.echo_error(f"Failed to locate {file}")
+            return
+
     # Load the latest starlog
     with open(paths["helm_f"], "r") as f:
         content = f.read().strip()
