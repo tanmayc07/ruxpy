@@ -24,7 +24,10 @@ from ruxpy import (
 )
 @click.option("-m", "--message", help="Commit message for the starlog entry")
 @click.option("-l", "--list", is_flag=True, help="List all starlog entries (commits)")
-def starlog(create, message, list):
+@click.option(
+    "-ld", "--list-debug", is_flag=True, help="List the starlog info for debug purposes"
+)
+def starlog(create, message, list, list_debug):
     # Find the root and check integrity
     base_path = Spacedock.find_dock_root(None)
     paths = get_paths(base_path)
@@ -38,25 +41,27 @@ def starlog(create, message, list):
 
     if list:
         starlogs_dir = os.path.join(paths["dock"], "starlogs")
-        starlogs_obj_list = []
+        starlogs_obj_list = walk_starlog_objects(starlogs_dir)
 
-        found_logs = False
-        for root, _, files in os.walk(starlogs_dir):
-            for file in files:
-                found_logs = True
-                dirpart = os.path.basename(root)
-                full_hash = dirpart + file
-                starlog_path = os.path.join(root, file)
-                with open(starlog_path, "r") as f:
-                    starlog_obj = json.load(f)
-                    starlog_obj["hash"] = full_hash
-                    starlogs_obj_list.append(starlog_obj)
-
-        if not found_logs:
-            Messages.echo_info("No starlog entries found!")
+        if not starlogs_obj_list:
             return
 
-        starlogs_obj_list.sort(key=lambda x: x["timestamp"], reverse=True)
+        for starlog_obj in starlogs_obj_list:
+            click.echo(click.style(f"starlog {starlog_obj['hash']}", fg="yellow"))
+            click.echo(f"Author: {starlog_obj['author']}")
+            click.echo(f"Date: {starlog_obj['timestamp']}")
+            click.echo()
+            click.echo(f"       {starlog_obj['message']}")
+            click.echo()
+
+        return
+
+    if list_debug:
+        starlogs_dir = os.path.join(paths["dock"], "starlogs")
+        starlogs_obj_list = walk_starlog_objects(starlogs_dir)
+
+        if not starlogs_obj_list:
+            return
 
         for starlog_obj in starlogs_obj_list:
             click.echo(
@@ -231,3 +236,26 @@ Files yet to be beamed:
 Use -cm to create a commit with a message.
 Use -l to list all starlogs."""
         )
+
+
+def walk_starlog_objects(starlogs_dir: str) -> list | None:
+    starlogs_obj_list = []
+
+    found_logs = False
+    for root, _, files in os.walk(starlogs_dir):
+        for file in files:
+            found_logs = True
+            dirpart = os.path.basename(root)
+            full_hash = dirpart + file
+            starlog_path = os.path.join(root, file)
+            with open(starlog_path, "r") as f:
+                starlog_obj = json.load(f)
+                starlog_obj["hash"] = full_hash
+                starlogs_obj_list.append(starlog_obj)
+
+    if not found_logs:
+        Messages.echo_info("No starlog entries found!")
+        return
+
+    starlogs_obj_list.sort(key=lambda x: x["timestamp"], reverse=True)
+    return starlogs_obj_list
