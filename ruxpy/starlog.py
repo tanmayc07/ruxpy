@@ -27,7 +27,8 @@ from ruxpy import (
 @click.option(
     "-ld", "--list-debug", is_flag=True, help="List the starlog info for debug purposes"
 )
-def starlog(create, message, list, list_debug):
+@click.option("-l1", "--l1", is_flag=True, help="List all starlog entries in one line")
+def starlog(create, message, list, list_debug, l1):
     # Find the root and check integrity
     base_path = Spacedock.find_dock_root(None)
     paths = get_paths(base_path)
@@ -47,12 +48,27 @@ def starlog(create, message, list, list_debug):
             return
 
         for starlog_obj in starlogs_obj_list:
-            click.echo(click.style(f"starlog {starlog_obj['hash']}", fg="yellow"))
+            click.echo(click.style(f"starlog {starlog_obj['hash'][:30]}", fg="yellow"))
             click.echo(f"Author: {starlog_obj['author']}")
             click.echo(f"Date: {starlog_obj['timestamp']}")
             click.echo()
             click.echo(f"       {starlog_obj['message']}")
             click.echo()
+
+        return
+
+    if l1:
+        starlogs_dir = os.path.join(paths["dock"], "starlogs")
+        starlogs_obj_list = walk_starlog_objects(starlogs_dir)
+
+        if not starlogs_obj_list:
+            return
+
+        for starlog_obj in starlogs_obj_list:
+            click.echo(
+                click.style(f"{starlog_obj["hash"][:7]} ", fg="yellow"), nl=False
+            )
+            click.echo(f"{starlog_obj["message"]}")
 
         return
 
@@ -64,16 +80,25 @@ def starlog(create, message, list, list_debug):
             return
 
         for starlog_obj in starlogs_obj_list:
+            tree_hash = starlog_obj.get("tree", "")
+            parent_hash = starlog_obj.get("parent", "")
+
             click.echo(
-                f"Hash: {starlog_obj['hash']}\n"
-                f"Author: {starlog_obj.get('author')}\n"
-                f"Email: {starlog_obj.get('email')}\n"
-                f"Message: {starlog_obj.get('message')}\n"
-                f"Timestamp: {starlog_obj.get('timestamp')}\n"
-                f"Parent: {starlog_obj.get('parent')}\n"
-                f"Tree: {starlog_obj.get('tree')}\n"
-                "-------------------------------------------------------------------"
+                f"{fg_yellow_title("Hash:")} {starlog_obj['hash'][:30]}\n"
+                f"{fg_yellow_title("Author:")} {starlog_obj.get('author')}\n"
+                f"{fg_yellow_title("Email:")} {starlog_obj.get('email')}\n"
+                f"{fg_yellow_title("Message:")} {starlog_obj.get('message')}\n"
+                f"{fg_yellow_title("Timestamp:")} {starlog_obj.get('timestamp')}\n",
+                nl=False,
             )
+
+            if parent_hash:
+                click.echo(f"{fg_yellow_title("parent:")} {parent_hash[:30]}")
+
+            if tree_hash:
+                click.echo(f"{fg_yellow_title("tree:")} {tree_hash[:30]}")
+
+            click.echo("---------------------------------------")
 
         return
 
@@ -259,3 +284,7 @@ def walk_starlog_objects(starlogs_dir: str) -> list | None:
 
     starlogs_obj_list.sort(key=lambda x: x["timestamp"], reverse=True)
     return starlogs_obj_list
+
+
+def fg_yellow_title(msg: str):
+    return click.style(msg, fg="yellow")
