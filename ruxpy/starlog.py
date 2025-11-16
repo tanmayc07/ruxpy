@@ -10,6 +10,7 @@ from ruxpy import (
     Messages,
     Starlog,
     Spacedock,
+    Courses,
     RuxpyTree,
     safe_load_staged_files,
     get_paths,
@@ -40,6 +41,8 @@ def starlog(create, message, list, list_debug, l1):
         )
         return
 
+    current_course = Courses.current(paths["helm_f"])
+
     if list:
         starlogs_dir = os.path.join(paths["dock"], "starlogs")
         starlogs_obj_list = walk_starlog_objects(starlogs_dir)
@@ -48,7 +51,12 @@ def starlog(create, message, list, list_debug, l1):
             return
 
         for starlog_obj in starlogs_obj_list:
-            click.echo(click.style(f"starlog {starlog_obj['hash'][:30]}", fg="yellow"))
+            click.echo(
+                click.style(f"starlog {starlog_obj['hash'][:30]} (", fg="yellow"),
+                nl=False,
+            )
+            click.echo(click.style("HELM ", fg="red"), nl=False)
+            click.echo(f"-> {current_course})")
             click.echo(f"Author: {starlog_obj['author']}")
             click.echo(f"Date: {starlog_obj['timestamp']}")
             click.echo()
@@ -68,7 +76,9 @@ def starlog(create, message, list, list_debug, l1):
             click.echo(
                 click.style(f"{starlog_obj["hash"][:7]} ", fg="yellow"), nl=False
             )
-            click.echo(f"{starlog_obj["message"]}")
+            click.echo(f"{starlog_obj["message"]} (", nl=False)
+            click.echo(click.style("HELM ", fg="red"), nl=False)
+            click.echo(f"-> {current_course})")
 
         return
 
@@ -84,6 +94,8 @@ def starlog(create, message, list, list_debug, l1):
             parent_hash = starlog_obj.get("parent", "")
 
             click.echo(
+                f"---------------------------------------\n"
+                f"{click.style("On course", fg="red")} => {current_course}\n"
                 f"{fg_yellow_title("Hash:")} {starlog_obj['hash'][:30]}\n"
                 f"{fg_yellow_title("Author:")} {starlog_obj.get('author')}\n"
                 f"{fg_yellow_title("Email:")} {starlog_obj.get('email')}\n"
