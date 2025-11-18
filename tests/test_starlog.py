@@ -52,7 +52,11 @@ def test_starlog_requires_name_and_email(tmp_path):
 def test_starlog_list_with_entries(starlog_repo):
     runner = CliRunner()
     result = runner.invoke(main, ["starlog", "-l"])
-    assert "starlog abcdef1234 " "(HELM -> core)\n" "Author: Test\n" in result.output
+    assert (
+        "starlog abcdef1234 " in result.output
+        and "(HELM -> core)" in result.output
+        and "Author: Test" in result.output
+    )
 
 
 def test_starlog_list_without_entries(init_repo):

@@ -44,9 +44,7 @@ def starlog(create, message, list, list_debug, l1):
     current_course = Courses.current(paths["helm_f"])
 
     if list:
-        starlogs_dir = os.path.join(paths["dock"], "starlogs")
-        starlogs_obj_list = walk_starlog_objects(starlogs_dir)
-
+        starlogs_obj_list = get_starlog_objects_list(paths)
         if not starlogs_obj_list:
             return
 
@@ -66,25 +64,23 @@ def starlog(create, message, list, list_debug, l1):
         return
 
     if l1:
-        starlogs_dir = os.path.join(paths["dock"], "starlogs")
-        starlogs_obj_list = walk_starlog_objects(starlogs_dir)
+        starlogs_obj_list = get_starlog_objects_list(paths)
 
         if not starlogs_obj_list:
             return
 
         for starlog_obj in starlogs_obj_list:
             click.echo(
-                click.style(f"{starlog_obj["hash"][:7]} ", fg="yellow"), nl=False
+                click.style(f"{starlog_obj['hash'][:7]} ", fg="yellow"), nl=False
             )
-            click.echo(f"{starlog_obj["message"]} (", nl=False)
+            click.echo(f"{starlog_obj['message']} (", nl=False)
             click.echo(click.style("HELM ", fg="red"), nl=False)
             click.echo(f"-> {current_course})")
 
         return
 
     if list_debug:
-        starlogs_dir = os.path.join(paths["dock"], "starlogs")
-        starlogs_obj_list = walk_starlog_objects(starlogs_dir)
+        starlogs_obj_list = get_starlog_objects_list(paths)
 
         if not starlogs_obj_list:
             return
@@ -95,20 +91,20 @@ def starlog(create, message, list, list_debug, l1):
 
             click.echo(
                 f"---------------------------------------\n"
-                f"{click.style("On course", fg="red")} => {current_course}\n"
-                f"{fg_yellow_title("Hash:")} {starlog_obj['hash'][:30]}\n"
-                f"{fg_yellow_title("Author:")} {starlog_obj.get('author')}\n"
-                f"{fg_yellow_title("Email:")} {starlog_obj.get('email')}\n"
-                f"{fg_yellow_title("Message:")} {starlog_obj.get('message')}\n"
-                f"{fg_yellow_title("Timestamp:")} {starlog_obj.get('timestamp')}\n",
+                f"{click.style('On course', fg="red")} => {current_course}\n"
+                f"{fg_yellow_title('Hash:')} {starlog_obj['hash'][:30]}\n"
+                f"{fg_yellow_title('Author:')} {starlog_obj.get('author')}\n"
+                f"{fg_yellow_title('Email:')} {starlog_obj.get('email')}\n"
+                f"{fg_yellow_title('Message:')} {starlog_obj.get('message')}\n"
+                f"{fg_yellow_title('Timestamp:')} {starlog_obj.get('timestamp')}\n",
                 nl=False,
             )
 
             if parent_hash:
-                click.echo(f"{fg_yellow_title("parent:")} {parent_hash[:30]}")
+                click.echo(f"{fg_yellow_title('parent:')} {parent_hash[:30]}")
 
             if tree_hash:
-                click.echo(f"{fg_yellow_title("tree:")} {tree_hash[:30]}")
+                click.echo(f"{fg_yellow_title('tree:')} {tree_hash[:30]}")
 
             click.echo("---------------------------------------")
 
@@ -271,7 +267,8 @@ Files yet to be beamed:
         click.echo(
             """Usage:
 Use -cm to create a commit with a message.
-Use -l to list all starlogs."""
+Use -l to list all starlogs.
+Use --help to get more information."""
         )
 
 
@@ -300,3 +297,10 @@ def walk_starlog_objects(starlogs_dir: str) -> list | None:
 
 def fg_yellow_title(msg: str):
     return click.style(msg, fg="yellow")
+
+
+def get_starlog_objects_list(paths: dict) -> list | None:
+    starlogs_dir = os.path.join(paths["dock"], "starlogs")
+    starlogs_obj_list = walk_starlog_objects(starlogs_dir)
+
+    return starlogs_obj_list
