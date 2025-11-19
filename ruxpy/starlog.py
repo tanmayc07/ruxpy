@@ -4,6 +4,7 @@ import json
 import hashlib
 import tomlkit
 from tomlkit import exceptions
+from collections import defaultdict
 import click
 from ruxpy import ruxpy
 from ruxpy import (
@@ -24,7 +25,11 @@ from ruxpy import (
 )
 @click.option("-m", "--message", help="Commit message for the starlog entry")
 @click.option("-l", "--list", is_flag=True, help="List all starlog entries (commits)")
-def starlog(create, message, list):
+@click.option(
+    "-ld", "--list-debug", is_flag=True, help="List the starlog info for debug purposes"
+)
+@click.option("-l1", "--l1", is_flag=True, help="List all starlog entries in one line")
+def starlog(create, message, list, list_debug, l1):
     # Find the root and check integrity
     base_path = Spacedock.find_dock_root(None)
     paths = get_paths(base_path)
@@ -36,39 +41,76 @@ def starlog(create, message, list):
         )
         return
 
+    course_hash_map = get_course_hash_map(paths["helm_d"])
+
     if list:
-        starlogs_dir = os.path.join(paths["dock"], "starlogs")
-        starlogs_obj_list = []
-
-        found_logs = False
-        for root, _, files in os.walk(starlogs_dir):
-            for file in files:
-                found_logs = True
-                dirpart = os.path.basename(root)
-                full_hash = dirpart + file
-                starlog_path = os.path.join(root, file)
-                with open(starlog_path, "r") as f:
-                    starlog_obj = json.load(f)
-                    starlog_obj["hash"] = full_hash
-                    starlogs_obj_list.append(starlog_obj)
-
-        if not found_logs:
-            Messages.echo_info("No starlog entries found!")
+        starlogs_obj_list = get_starlog_objects_list(paths)
+        if not starlogs_obj_list:
             return
-
-        starlogs_obj_list.sort(key=lambda x: x["timestamp"], reverse=True)
 
         for starlog_obj in starlogs_obj_list:
             click.echo(
-                f"Hash: {starlog_obj['hash']}\n"
-                f"Author: {starlog_obj.get('author')}\n"
-                f"Email: {starlog_obj.get('email')}\n"
-                f"Message: {starlog_obj.get('message')}\n"
-                f"Timestamp: {starlog_obj.get('timestamp')}\n"
-                f"Parent: {starlog_obj.get('parent')}\n"
-                f"Tree: {starlog_obj.get('tree')}\n"
-                "-------------------------------------------------------------------"
+                click.style(f"starlog {starlog_obj['hash'][:30]} ", fg="yellow"),
+                nl=False,
             )
+
+            print_course_info(starlog_obj, course_hash_map)
+            click.echo(f"Author: {starlog_obj['author']}")
+            click.echo(f"Date: {starlog_obj['timestamp']}")
+            click.echo()
+            click.echo(f"       {starlog_obj['message']}")
+            click.echo()
+
+        return
+
+    if l1:
+        starlogs_obj_list = get_starlog_objects_list(paths)
+
+        if not starlogs_obj_list:
+            return
+
+        for starlog_obj in starlogs_obj_list:
+            click.echo(
+                click.style(f"{starlog_obj['hash'][:7]} ", fg="yellow"), nl=False
+            )
+            click.echo(f"{starlog_obj['message']} ", nl=False)
+            print_course_info(starlog_obj, course_hash_map)
+
+        return
+
+    if list_debug:
+        starlogs_obj_list = get_starlog_objects_list(paths)
+
+        if not starlogs_obj_list:
+            return
+
+        for starlog_obj in starlogs_obj_list:
+            tree_hash = starlog_obj.get("tree", "")
+            parent_hash = starlog_obj.get("parent", "")
+
+            click.echo(
+                f"---------------------------------------\n"
+                f"{click.style('On course', fg="red")} => ",
+                nl=False,
+            )
+            print_course_info(starlog_obj, course_hash_map)
+
+            click.echo(
+                f"{fg_yellow_title('Hash:')} {starlog_obj['hash'][:30]}\n"
+                f"{fg_yellow_title('Author:')} {starlog_obj.get('author')}\n"
+                f"{fg_yellow_title('Email:')} {starlog_obj.get('email')}\n"
+                f"{fg_yellow_title('Message:')} {starlog_obj.get('message')}\n"
+                f"{fg_yellow_title('Timestamp:')} {starlog_obj.get('timestamp')}\n",
+                nl=False,
+            )
+
+            if parent_hash:
+                click.echo(f"{fg_yellow_title('parent:')} {parent_hash[:30]}")
+
+            if tree_hash:
+                click.echo(f"{fg_yellow_title('tree:')} {tree_hash[:30]}")
+
+            click.echo("---------------------------------------")
 
         return
 
@@ -229,5 +271,72 @@ Files yet to be beamed:
         click.echo(
             """Usage:
 Use -cm to create a commit with a message.
-Use -l to list all starlogs."""
+Use -l to list all starlogs.
+Use --help to get more information."""
         )
+
+
+def walk_starlog_objects(starlogs_dir: str) -> list | None:
+    starlogs_obj_list = []
+
+    found_logs = False
+    for root, _, files in os.walk(starlogs_dir):
+        for file in files:
+            found_logs = True
+            dirpart = os.path.basename(root)
+            full_hash = dirpart + file
+            starlog_path = os.path.join(root, file)
+            with open(starlog_path, "r") as f:
+                starlog_obj = json.load(f)
+                starlog_obj["hash"] = full_hash
+                starlogs_obj_list.append(starlog_obj)
+
+    if not found_logs:
+        Messages.echo_info("No starlog entries found!")
+        return
+
+    starlogs_obj_list.sort(key=lambda x: x["timestamp"], reverse=True)
+    return starlogs_obj_list
+
+
+def fg_yellow_title(msg: str):
+    return click.style(msg, fg="yellow")
+
+
+def get_starlog_objects_list(paths: dict) -> list | None:
+    starlogs_dir = os.path.join(paths["dock"], "starlogs")
+    starlogs_obj_list = walk_starlog_objects(starlogs_dir)
+
+    return starlogs_obj_list
+
+
+def get_course_hash_map(course_dir):
+    course_hash_map = defaultdict(list)
+    for dirpath, _, files in os.walk(course_dir):
+        course_files = files
+
+        for file in course_files:
+            with open(os.path.join(dirpath, file), "r") as f:
+                course_hash_map[f.read()].append(file)
+
+    return course_hash_map
+
+
+def print_course_info(starlog_obj, course_hash_map):
+    course_info = ""
+    if starlog_obj["hash"] in course_hash_map.keys():
+        course_info += "("
+        for course in course_hash_map[starlog_obj["hash"]]:
+            if course == "core":
+                course_info += f"{click.style('HELM', fg="red")} -> 'core'"
+            else:
+                course_info += f"{click.style(course, fg="green")}"
+            course_info += ", "
+
+        ind = len(course_info) - 2
+        if course_info[ind:] == ", ":
+            course_info = course_info[: len(course_info) - 2]
+
+        course_info += ")"
+
+    click.echo(course_info)

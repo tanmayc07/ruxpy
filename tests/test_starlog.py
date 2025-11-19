@@ -53,15 +53,9 @@ def test_starlog_list_with_entries(starlog_repo):
     runner = CliRunner()
     result = runner.invoke(main, ["starlog", "-l"])
     assert (
-        "Hash: abcdef1234\n"
-        "Author: Test\n"
-        "Email: test@example.com\n"
-        "Message: Test commit\n"
-        "Timestamp: 2025-09-23T00:00:00\n"
-        "Parent: None\n"
-        "Tree: None\n"
-        "-------------------------------------------------------------------"
-        in result.output
+        "starlog abcdef1234 " in result.output
+        and "(HELM -> core)" in result.output
+        and "Author: Test" in result.output
     )
 
 
