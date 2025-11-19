@@ -4,13 +4,13 @@ import json
 import hashlib
 import tomlkit
 from tomlkit import exceptions
+from collections import defaultdict
 import click
 from ruxpy import ruxpy
 from ruxpy import (
     Messages,
     Starlog,
     Spacedock,
-    Courses,
     RuxpyTree,
     safe_load_staged_files,
     get_paths,
@@ -41,7 +41,7 @@ def starlog(create, message, list, list_debug, l1):
         )
         return
 
-    current_course = Courses.current(paths["helm_f"])
+    course_hash_map = get_course_hash_map(paths["helm_d"])
 
     if list:
         starlogs_obj_list = get_starlog_objects_list(paths)
@@ -50,11 +50,11 @@ def starlog(create, message, list, list_debug, l1):
 
         for starlog_obj in starlogs_obj_list:
             click.echo(
-                click.style(f"starlog {starlog_obj['hash'][:30]} (", fg="yellow"),
+                click.style(f"starlog {starlog_obj['hash'][:30]} ", fg="yellow"),
                 nl=False,
             )
-            click.echo(click.style("HELM ", fg="red"), nl=False)
-            click.echo(f"-> {current_course})")
+
+            print_course_info(starlog_obj, course_hash_map)
             click.echo(f"Author: {starlog_obj['author']}")
             click.echo(f"Date: {starlog_obj['timestamp']}")
             click.echo()
@@ -73,9 +73,8 @@ def starlog(create, message, list, list_debug, l1):
             click.echo(
                 click.style(f"{starlog_obj['hash'][:7]} ", fg="yellow"), nl=False
             )
-            click.echo(f"{starlog_obj['message']} (", nl=False)
-            click.echo(click.style("HELM ", fg="red"), nl=False)
-            click.echo(f"-> {current_course})")
+            click.echo(f"{starlog_obj['message']} ", nl=False)
+            print_course_info(starlog_obj, course_hash_map)
 
         return
 
@@ -91,7 +90,12 @@ def starlog(create, message, list, list_debug, l1):
 
             click.echo(
                 f"---------------------------------------\n"
-                f"{click.style('On course', fg="red")} => {current_course}\n"
+                f"{click.style('On course', fg="red")} => ",
+                nl=False,
+            )
+            print_course_info(starlog_obj, course_hash_map)
+
+            click.echo(
                 f"{fg_yellow_title('Hash:')} {starlog_obj['hash'][:30]}\n"
                 f"{fg_yellow_title('Author:')} {starlog_obj.get('author')}\n"
                 f"{fg_yellow_title('Email:')} {starlog_obj.get('email')}\n"
@@ -304,3 +308,35 @@ def get_starlog_objects_list(paths: dict) -> list | None:
     starlogs_obj_list = walk_starlog_objects(starlogs_dir)
 
     return starlogs_obj_list
+
+
+def get_course_hash_map(course_dir):
+    course_hash_map = defaultdict(list)
+    for dirpath, _, files in os.walk(course_dir):
+        course_files = files
+
+        for file in course_files:
+            with open(os.path.join(dirpath, file), "r") as f:
+                course_hash_map[f.read()].append(file)
+
+    return course_hash_map
+
+
+def print_course_info(starlog_obj, course_hash_map):
+    course_info = ""
+    if starlog_obj["hash"] in course_hash_map.keys():
+        course_info += "("
+        for course in course_hash_map[starlog_obj["hash"]]:
+            if course == "core":
+                course_info += f"{click.style('HELM', fg="red")} -> 'core'"
+            else:
+                course_info += f"{click.style(course, fg="green")}"
+            course_info += ", "
+
+        ind = len(course_info) - 2
+        if course_info[ind:] == ", ":
+            course_info = course_info[: len(course_info) - 2]
+
+        course_info += ")"
+
+    click.echo(course_info)
