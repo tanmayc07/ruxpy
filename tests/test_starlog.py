@@ -54,7 +54,7 @@ def test_starlog_list_with_entries(starlog_repo):
     result = runner.invoke(main, ["starlog", "-l"])
     assert (
         "starlog abcdef1234 " in result.output
-        and "(HELM -> core)" in result.output
+        and "(HELM -> 'core')" in result.output
         and "Author: Test" in result.output
     )
 
@@ -76,7 +76,9 @@ def test_starlog_clears_stage_if_all_beamed_files_deleted(init_repo):
     assert not os.path.exists(init_repo / "file1.txt")
     assert not os.path.exists(init_repo / "file2.txt")
 
-    runner.invoke(main, ["config", "-sn", "n", "-se", "e"])
+    runner.invoke(
+        main, ["config", "-sn", "Jean-Luc Picard", "-se", "example@gmail.com"]
+    )
     runner.invoke(main, ["starlog", "-cm", "init"])
 
     with open(init_repo / ".dock" / "stage") as f:
