@@ -25,6 +25,7 @@ from .ruxpy import (
     Spacedock,
     Starlog,
     RuxpyTree,
+    Diff,
 )
 
 __all__ = [
@@ -39,6 +40,7 @@ __all__ = [
     "Spacedock",
     "Starlog",
     "RuxpyTree",
+    "Diff",
     # Python utils
     "get_course_name",
     "list_repo_files",
