@@ -15,6 +15,25 @@ impl Courses {
         let current_course_name = current_course.trim().rsplit('/').next().unwrap();
         current_course_name.to_string()
     }
+
+    pub fn load_stage_files(path: &str) -> Result<Vec<String>, String> {
+        let data = fs::read_to_string(path)
+            .map_err(|e| format!("Failed to read the stage file: {}", e))?;
+
+        let json: serde_json::Value = serde_json::from_str(&data)
+            .map_err(|e| format!("Failed to parse the stage JSON: {}", e))?;
+
+        let stage_array = json
+            .as_array()
+            .ok_or_else(|| String::from("Failed to process stage file JSON."))?;
+
+        let file_list: Vec<String> = stage_array
+            .iter()
+            .filter_map(|value| value.as_str().map(|s| s.to_string()))
+            .collect();
+
+        Ok(file_list)
+    }
 }
 
 #[pymethods]

@@ -1,3 +1,4 @@
+use ignore::Walk;
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
 use std::{env, path::Path};
@@ -44,6 +45,11 @@ pub const PATHS: &[PathInfo] = &[
         kind: PathKind::Dir,
     },
     PathInfo {
+        key: "starlogs",
+        path: ".dock/starlogs",
+        kind: PathKind::Dir,
+    },
+    PathInfo {
         key: "stage",
         path: ".dock/stage",
         kind: PathKind::File,
@@ -78,6 +84,37 @@ impl Spacedock {
 
     pub fn get_path_info_internal(key: &str) -> Option<&'static PathInfo> {
         PATHS.iter().find(|info| info.key == key)
+    }
+
+    pub fn get_repository_files() -> Result<Vec<String>, String> {
+        let repo_path = Spacedock::find_dock_root(None).unwrap();
+
+        let mut current_dir_file_list = Vec::new();
+        for result in Walk::new(&repo_path) {
+            match result {
+                Ok(entry) => {
+                    let path_str = entry.path().to_string_lossy();
+
+                    if path_str.contains(".dock") {
+                        continue;
+                    }
+
+                    if entry.file_type().is_some_and(|ft| ft.is_file()) {
+                        let relative_path = entry
+                            .path()
+                            .strip_prefix(&repo_path)
+                            .map_err(|e| format!("Path error: {}", e))?
+                            .to_string_lossy()
+                            .into_owned();
+
+                        current_dir_file_list.push(relative_path);
+                    }
+                }
+                Err(err) => return Err(format!("Failed to walk directory: {}", err)),
+            }
+        }
+
+        Ok(current_dir_file_list)
     }
 }
 
@@ -149,7 +186,7 @@ impl Spacedock {
     }
 
     #[staticmethod]
-    fn find_dock_root(start_path: Option<String>) -> Option<String> {
+    pub fn find_dock_root(start_path: Option<String>) -> Option<String> {
         let mut current = match start_path {
             Some(path) => std::path::PathBuf::from(path),
             None => std::env::current_dir().unwrap(),
