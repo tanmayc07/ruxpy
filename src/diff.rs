@@ -98,6 +98,44 @@ impl Diff {
 
         Ok(deleted_file_list)
     }
+
+    fn search_modified_files() -> Result<Vec<String>, String> {
+        let repo_path = Spacedock::find_dock_root(None).unwrap();
+
+        let tracked_files = get_tracked_files().map_err(|e| format!("{}", e))?;
+
+        let latest_hash = Starlog::get_latest_starlog_hash_internal()?;
+        let starlog_files_list = Starlog::load_starlog_files(&repo_path, &latest_hash)?;
+
+        let mut modified_files = Vec::new();
+
+        for path_str in tracked_files {
+            let full_path = Path::new(&repo_path).join(&path_str);
+            if !full_path.exists() {
+                // The file is deleted, skip it
+                // search_deleted_files() handles this case
+                continue;
+            }
+
+            let recorded_hash = match starlog_files_list.get(&path_str) {
+                Some(value) => value.as_str().unwrap().to_owned(),
+                None => continue,
+            };
+
+            let mut file = File::open(&full_path).map_err(|e| format!("{}", e))?;
+            let mut contents = Vec::new();
+            file.read_to_end(&mut contents)
+                .map_err(|e| format!("Failed to read: {}\n{}", path_str, e))?;
+
+            let current_hash = Blob::hash_contents(&contents);
+
+            if recorded_hash != current_hash {
+                modified_files.push(path_str);
+            }
+        }
+
+        Ok(modified_files)
+    }
 }
 
 #[pymethods]
@@ -125,7 +163,9 @@ impl Diff {
 
     #[staticmethod]
     pub fn get_modified_files() -> PyResult<Vec<String>> {
-        todo!()
+        let files = Diff::search_modified_files()
+            .map_err(|e| PyRuntimeError::new_err(format!("Failed to get modified files: {}", e)))?;
+        Ok(files)
     }
 
     #[staticmethod]
