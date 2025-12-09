@@ -1,18 +1,22 @@
 mod blob;
 mod courses;
+mod diff;
 mod ruxpy_tree;
 mod spacedock;
 mod starlog;
 
 use crate::blob::Blob;
 use crate::courses::Courses;
+use crate::diff::Diff;
 use crate::ruxpy_tree::RuxpyTree;
 use crate::spacedock::Spacedock;
+use crate::spacedock::PATHS;
 use crate::starlog::Starlog;
 
 use ignore::gitignore::{Gitignore, GitignoreBuilder};
 use pyo3::prelude::*;
 use sha3::{Digest, Sha3_256};
+use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
 use walkdir::WalkDir;
@@ -80,7 +84,7 @@ fn list_all_files(working_dir: &str) -> PyResult<Vec<String>> {
 }
 
 /// Reads .dockignore from the current directory and returns a matcher.
-fn get_dockignore_matcher() -> Option<Gitignore> {
+pub fn get_dockignore_matcher() -> Option<Gitignore> {
     let dockignore_path = Path::new(".dockignore");
     if dockignore_path.exists() {
         let mut builder = GitignoreBuilder::new(".");
@@ -98,7 +102,7 @@ fn get_dockignore_matcher() -> Option<Gitignore> {
 }
 
 /// Check if path should be ignored
-fn is_ignored(path: &Path, matcher: &Option<Gitignore>) -> bool {
+pub fn is_ignored(path: &Path, matcher: &Option<Gitignore>) -> bool {
     if let Some(gitignore) = matcher {
         gitignore.matched(path, false).is_ignore()
     } else {
@@ -119,6 +123,33 @@ fn filter_ignored_files(files: Vec<String>) -> PyResult<Vec<String>> {
     Ok(result)
 }
 
+#[pyfunction]
+pub fn get_tracked_files() -> PyResult<HashSet<String>> {
+    // Helpful closure for error handling
+    let map_err_to_py = |e: String| pyo3::exceptions::PyIOError::new_err(e);
+
+    // Get staged files as list
+    let stage_path = PATHS
+        .iter()
+        .find(|&x| x.key == "stage")
+        .ok_or_else(|| pyo3::exceptions::PyIOError::new_err("Stage path not found in PATHS."))?;
+    let stage_file_list = Courses::load_stage_files(stage_path.path).map_err(map_err_to_py)?;
+
+    // Get latest starlog object files as list
+    let latest_starlog_hash = Starlog::get_latest_starlog_hash_internal().map_err(map_err_to_py)?;
+    let starlog_object_map =
+        Starlog::load_starlog_files(".", &latest_starlog_hash).map_err(map_err_to_py)?;
+    let starlog_file_list: Vec<String> = starlog_object_map.into_keys().collect();
+
+    // Combine staged files and latest starlog object files as list
+    let tracked_files: HashSet<String> = stage_file_list
+        .into_iter()
+        .chain(starlog_file_list)
+        .collect();
+
+    Ok(tracked_files)
+}
+
 /// A Python module implemented in Rust.
 #[pymodule]
 fn ruxpy(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -131,6 +162,7 @@ fn ruxpy(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Blob>()?;
     m.add_class::<Starlog>()?;
     m.add_class::<RuxpyTree>()?;
+    m.add_class::<Diff>()?;
     Ok(())
 }
 

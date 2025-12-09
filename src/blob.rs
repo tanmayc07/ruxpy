@@ -10,6 +10,13 @@ pub struct Blob;
 #[pymethods]
 impl Blob {
     #[staticmethod]
+    pub fn hash_contents(data: &[u8]) -> String {
+        let mut hasher = Sha3_256::new();
+        hasher.update(data);
+        format!("{:x}", hasher.finalize())
+    }
+
+    #[staticmethod]
     fn read_blob(repo_path: &str, hash: &str) -> PyResult<Vec<u8>> {
         let (subdir, filename) = hash.split_at(2);
         let obj_path = Path::new(repo_path).join(".dock").join("objects");
